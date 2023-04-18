@@ -13,6 +13,7 @@ import lombok.Setter;
 import tech.nobb.task.engine.domain.Execution;
 import tech.nobb.task.engine.domain.Task;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -20,9 +21,11 @@ import java.util.UUID;
 @Data
 public class SerialAllocator implements TaskAllocator {
 
+    private static ObjectMapper mapper = new ObjectMapper();
+
     private String id;
     private String name;
-    private final List<String> order;
+    private List<String> order;
 
     @Setter(AccessLevel.NONE)
     @Getter(AccessLevel.NONE)
@@ -33,6 +36,20 @@ public class SerialAllocator implements TaskAllocator {
         id = UUID.randomUUID().toString();
         name = "SERIAL";
         this.configRepository = configRepository;
+    }
+
+    public SerialAllocator(ConfigRepository configRepository) {
+        id = UUID.randomUUID().toString();
+        name = "SERIAL";
+        this.order = new ArrayList<>();
+        this.configRepository = configRepository;
+    }
+
+    public SerialAllocator(String id, ConfigRepository configRepository) {
+        this.id = id;
+        this.configRepository = configRepository;
+        order = new ArrayList<>();
+        name = "SERIAL";
     }
 
     @Override
@@ -50,7 +67,6 @@ public class SerialAllocator implements TaskAllocator {
 
     @Override
     public String toJSON() {
-        ObjectMapper mapper = new ObjectMapper();
         try {
             return mapper.writeValueAsString(this);
         } catch (JsonProcessingException e) {
@@ -66,5 +82,17 @@ public class SerialAllocator implements TaskAllocator {
     @Override
     public ConfigDO toDataObject() {
         return new ConfigDO(id, "ALLOCATOR", name, toJSON());
+    }
+
+    @Override
+    public void restore() {
+        ConfigDO configDO = configRepository.findById(id).orElseGet(null);
+        try {
+            SerialAllocator allocator = mapper.readValue(configDO.getProperty(), SerialAllocator.class);
+            this.order = allocator.getOrder();
+            this.name = allocator.getName();
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

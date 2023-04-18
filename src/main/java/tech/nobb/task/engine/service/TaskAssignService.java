@@ -2,24 +2,25 @@ package tech.nobb.task.engine.service;
 
 import tech.nobb.task.engine.domain.Execution;
 import tech.nobb.task.engine.domain.Task;
-import tech.nobb.task.engine.repository.ConfigRepository;
-import tech.nobb.task.engine.repository.ExecutionRepository;
-import tech.nobb.task.engine.repository.TaskRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
-public class TaskAssignService {
+public class TaskAssignService extends BaseService {
 
-    @Autowired private TaskRepository taskRepository;
-    @Autowired private ExecutionRepository executionRepository;
-    @Autowired private ConfigRepository configRepository;
-
+    // 将任务分配给一个执行者
     public Execution assignTaskToOne(String taskId, String executor) {
         // 创建一个空的Task对象
-        Task task = new Task(taskId,taskRepository,executionRepository,configRepository);
+        Task task = new Task(taskId,taskRepository, executionRepository, configRepository);
         task.restore();
-        Execution execution = task.assign(executor);
-        return execution;
+        return task.assign(executor);
+    }
+
+    // 将任务分配给多个执行者
+    public List<Execution> assignTask(String taskId, List<String> executors) {
+        Task task = new Task(taskId, taskRepository, executionRepository, configRepository);
+        task.restore();
+        return task.assign(executors);
     }
 }

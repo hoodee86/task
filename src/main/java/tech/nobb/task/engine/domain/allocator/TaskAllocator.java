@@ -10,4 +10,5 @@ public interface TaskAllocator {
     String toJSON();
     void save();
     ConfigDO toDataObject();
+    void restore();
 }

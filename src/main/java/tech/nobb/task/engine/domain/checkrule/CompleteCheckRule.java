@@ -9,4 +9,5 @@ public interface CompleteCheckRule {
     String toJSON();
     void save();
     ConfigDO toDataObject();
+    void restore();
 }

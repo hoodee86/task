@@ -21,13 +21,15 @@ import java.util.UUID;
 @Data
 public class PercentageCheckRule implements CompleteCheckRule {
 
+    private static ObjectMapper mapper = new ObjectMapper();
+
     @Setter(AccessLevel.NONE)
     @Getter(AccessLevel.NONE)
     Logger logger = LoggerFactory.getLogger(PercentageCheckRule.class);
 
     private String id;
     private String name;
-    private final double percentThreshold;
+    private double percentThreshold;
 
     @Setter(AccessLevel.NONE)
     @Getter(AccessLevel.NONE)
@@ -56,7 +58,6 @@ public class PercentageCheckRule implements CompleteCheckRule {
 
     @Override
     public String toJSON() {
-        ObjectMapper mapper = new ObjectMapper();
         try {
             return mapper.writeValueAsString(this);
         } catch (JsonProcessingException e) {
@@ -73,5 +74,17 @@ public class PercentageCheckRule implements CompleteCheckRule {
     @Override
     public ConfigDO toDataObject() {
         return new ConfigDO(id, "COMPLETE_CHECK_RULE", name, toJSON());
+    }
+
+    @Override
+    public void restore() {
+        ConfigDO configDO = configRepository.findById(id).orElseGet(null);
+        try {
+            PercentageCheckRule rule = mapper.readValue(configDO.getProperty(), PercentageCheckRule.class);
+            this.name = rule.getName();
+            this.percentThreshold = rule.getPercentThreshold();
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

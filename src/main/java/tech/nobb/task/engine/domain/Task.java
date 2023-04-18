@@ -186,6 +186,8 @@ public class Task {
 
     // 根据当前对象id还原当前task对象
     public void restore() {
+        //TaskDO taskDO = taskRepository.findById(id).orElseGet(null);
+        //this.name = taskDO.getName();
 
     }
 

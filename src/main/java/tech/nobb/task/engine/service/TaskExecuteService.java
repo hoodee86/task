@@ -3,5 +3,5 @@ package tech.nobb.task.engine.service;
 import org.springframework.stereotype.Service;
 
 @Service
-public class TaskExecuteService {
+public class TaskExecuteService extends BaseService {
 }

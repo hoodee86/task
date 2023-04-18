@@ -17,6 +17,8 @@ import java.util.UUID;
 @Data
 public class ParallelAllocator implements TaskAllocator {
 
+    private static ObjectMapper mapper = new ObjectMapper();
+
     @Setter(AccessLevel.NONE)
     @Getter(AccessLevel.NONE)
     private final ConfigRepository configRepository;
@@ -52,8 +54,18 @@ public class ParallelAllocator implements TaskAllocator {
     }
 
     @Override
+    public void restore() {
+        ConfigDO configDO = configRepository.findById(id).orElseGet(null);
+        try {
+            ParallelAllocator allocator = mapper.readValue(configDO.getProperty(), ParallelAllocator.class);
+            this.name = allocator.getName();
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public String toJSON() {
-        ObjectMapper mapper = new ObjectMapper();
         try {
             return mapper.writeValueAsString(this);
         } catch (JsonProcessingException e) {

@@ -8,6 +8,8 @@ import java.util.List;
 public class TaskCreateAndAssignRequest {
     private String name;
     private String checkRule;
+    private String threshold;
     private String allocator;
+    private List<String> order;
     private List<String> executors;
 }

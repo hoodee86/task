@@ -100,7 +100,14 @@ public class Execution {
         executionRepository.save(this.toDataObject());
     }
 
-    public void restore() {
+    // ！！！注意：execution对象的还原无法单独还原，必须通过其Task对象进行还原。
+    public void restore(Task task) {
+        ExecutionDO executionDO = executionRepository.findById(id).orElseGet(null);
+        if (task.getId().equals(executionDO.getTaskId())) {
+            this.executor = executionDO.getExecutorId();
+            this.task = task;
+            this.status = Status.valueOf(executionDO.getStatus());
+        }
     }
 
     public ExecutionDO toDataObject() {
