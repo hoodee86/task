@@ -3,7 +3,6 @@ package tech.nobb.task.engine.domain.checkrule.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.htsc.task.engine.domain.*;
 import tech.nobb.task.engine.domain.checkrule.CompleteCheckRule;
 import tech.nobb.task.engine.repository.ConfigRepository;
 import tech.nobb.task.engine.repository.dataobj.ConfigDO;
