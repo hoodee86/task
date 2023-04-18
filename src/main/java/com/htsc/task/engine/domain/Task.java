@@ -1,138 +1,212 @@
 package com.htsc.task.engine.domain;
 
 import com.htsc.task.engine.domain.checkrule.CompleteCheckRule;
-import com.htsc.task.engine.domain.distributor.ExecutionDistributor;
-import com.htsc.task.engine.domain.persist.TaskPersist;
+import com.htsc.task.engine.domain.allocator.TaskAllocator;
+import com.htsc.task.engine.repository.ConfigRepository;
+import com.htsc.task.engine.repository.ExecutionRepository;
+import com.htsc.task.engine.repository.TaskRepository;
+import com.htsc.task.engine.repository.dataobj.TaskDO;
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-import java.util.Map;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
+@Data
 public class Task {
     public enum Status {
         // 任务被创建
         CREATED,
         // 任务被认领
-        CLAIMED,
+        PROCESSING,
         // 任务被取消
         CANCELED,
         // 任务完成
         COMPLETED
     }
-
     public enum Priority {
         HIGH,
-        MIDDLE,
-        LOW
+        NORMAL,
     }
-
     private final String id;
     private String name;
     private Priority priority;
-    private Map<Handler, Execution> executionManager;
+    private Map<String, Execution> executions;
     private Status status;
     private List<Task> subtask;
     private Task parent;
     private CompleteCheckRule completeCheckRule;
-    private ExecutionDistributor distributor;
-    private TaskPersist persist;
+    private TaskAllocator allocator;
+    @Setter(AccessLevel.NONE)
+    @Getter(AccessLevel.NONE)
+    private final TaskRepository taskRepository;
+    @Setter(AccessLevel.NONE)
+    @Getter(AccessLevel.NONE)
+    private final ExecutionRepository executionRepository;
+    @Setter(AccessLevel.NONE)
+    @Getter(AccessLevel.NONE)
+    private final ConfigRepository configRepository;
 
+    // 构建一个全新的任务对象
     public Task(String name,
                 Priority priority,
+                Task parent,
                 CompleteCheckRule completeCheckRule,
-                ExecutionDistributor distributor,
-                List<Handler> handlers,
-                TaskPersist persist,
-                Task parent) {
+                TaskAllocator allocator,
+                TaskRepository taskRepository,
+                ExecutionRepository executionRepository,
+                ConfigRepository configRepository
+                ) {
         this.id = UUID.randomUUID().toString();
         this.name = name;
         this.priority = priority;
         this.subtask = new ArrayList<>();
         this.completeCheckRule = completeCheckRule;
-        this.distributor = distributor;
-        this.executionManager = new HashMap<>();
+        this.allocator = allocator;
+        this.executions = new HashMap<String, Execution>();
         this.parent = parent;
-        this.persist = persist;
-        this.priority = Priority.LOW;
-        handlers.forEach(handler -> executionManager.put(
-                handler,
-                new Execution(this, handler)));
-        distributor.distribute(this);
-        this.status = Status.CLAIMED;
+        this.priority = Priority.NORMAL;
+        this.status = Status.CREATED;
+        this.taskRepository = taskRepository;
+        this.executionRepository = executionRepository;
+        this.configRepository = configRepository;
     }
 
-    public Task(String id, TaskPersist persist) {
+    // 根据ID构建一个空任务对象
+    public Task(String id,
+                TaskRepository taskRepository,
+                ExecutionRepository executionRepository,
+                ConfigRepository configRepository) {
         this.id = id;
-        this.persist = persist;
+        this.taskRepository = taskRepository;
+        this.executionRepository = executionRepository;
+        this.configRepository = configRepository;
+        this.subtask = new ArrayList<>();
+        this.executions = new HashMap<String, Execution>();
     }
 
-    public String getId() {
-        return id;
+    // 完成一个任务
+    public void complete(String executor) {
+        Execution execution = executions.get(executor);
+        execution.complete();
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public Priority getPriority() {
-        return priority;
-    }
-
-    public Status getStatus() {
-        return status;
-    }
-
-    public Task getParent() {
-        return parent;
-    }
-
-    public CompleteCheckRule getCompleteCheckRule() {
-        return completeCheckRule;
-    }
-
-    public Map<Handler, Execution> getExecutionManager() {
-        return executionManager;
-    }
-
-    public ExecutionDistributor getDistributor() {
-        return distributor;
-    }
-
-    // execution每当执行done的时候，都会去调用该方法，以检查当前Task是否做完
-    // 此方法会调用completeCheckRule的具体实例
-    public void completeCheck() {
-        if (completeCheckRule.isComplete(this)) {
+    public void checkCompletion() {
+        if (completeCheckRule.complete(this)) {
             // 将当前任务的状态设置成COMPLETED
             status = Status.COMPLETED;
             // 将TASK进行扫尾
-            doCompleted();
+            onCompleted();
         } else {
-            distributor.distribute(this);
+            allocator.allocate(this);
         }
     }
 
-    public void save() {
-        persist.save(this);
-    }
-
-    private void doCompleted() {
+    private void onCompleted() {
         if (status.equals(Status.COMPLETED)) {
             // 将当前TASK的所有ACTIVATED，EXECUTING，SUSPENDED状态置成DROPPED
-            executionManager.forEach((handler, execution) -> {
-                if (execution.getCurrentStatus().equals(Execution.Status.ACTIVATED) ||
-                    execution.getCurrentStatus().equals(Execution.Status.EXECUTING) ||
-                    execution.getCurrentStatus().equals(Execution.Status.SUSPENDED)) {
-                    execution.drop();
+            executions.forEach((id, e) -> {
+                if (e.getStatus().equals(Execution.Status.CREATED) ||
+                        e.getStatus().equals(Execution.Status.EXECUTING) ||
+                        e.getStatus().equals(Execution.Status.SUSPENDED)) {
+                    e.drop();
+                    e.save();
                 }
             });
+            save();
         }
     }
 
+    // 一个执行者认领一个任务
+    public void claim(String executor) {
+        Execution execution = new Execution(this, executor, executionRepository);
+        executions.put(executor, execution);
+        execution.start();
+        execution.save();
+        if (status.equals(Status.CREATED)) {
+            status = Status.PROCESSING;
+        }
+        save();
+    }
+    // 给一个执行者分配一个任务
+    public void assign(String executor) {
+        Execution execution = new Execution(this, executor, executionRepository);
+        executions.put(executor, execution);
+        allocator.allocate(this);
+        if (status.equals(Status.CREATED)) {
+            status = Status.PROCESSING;
+        }
+        save();
+    }
+
+    public void assign(List<String> executors) {
+        executors.forEach(e -> {
+            Execution execution = new Execution(this, e, executionRepository);
+            execution.save();
+            executions.put(e, execution);
+        });
+        allocator.allocate(this);
+        if (status.equals(Status.CREATED)) {
+            status = Status.PROCESSING;
+        }
+        save();
+    }
+
+    // 搁置一个任务
+    public void suspend(String executor) {
+        Execution execution = executions.get(executor);
+        execution.suspend();
+        execution.save();
+    }
+
+    // 取消搁置一个任务
+    public void unsuspend(String executor) {
+        Execution execution = executions.get(executor);
+        execution.unsuspend();
+        execution.save();
+    }
+
+    // 转让一个任务
+    public void forward(String executor, String otherExecutor) {
+        Execution execution = executions.get(executor);
+        execution.forward(otherExecutor);
+    }
+
+    // 持久化当前任务对象
+    public void save() {
+        completeCheckRule.save();
+        allocator.save();
+        taskRepository.save(toDataObject());
+    }
+
+    // 根据当前对象id还原当前task对象
+    public void restore() {
+
+    }
+
+    public TaskDO toDataObject() {
+        if (Objects.nonNull(parent)) {
+            return new TaskDO(id,
+                    parent.getId(),
+                    name, priority.name(),
+                    status.name(),
+                    completeCheckRule.getId(),
+                    allocator.getId());
+        } else {
+            return new TaskDO(id,
+                    "null",
+                    name, priority.name(),
+                    status.name(),
+                    completeCheckRule.getId(),
+                    allocator.getId());
+        }
+
+    }
     @Override
     public String toString() {
         return "{id : " + id + " name: " + name + " status: " + status +
-                "\n executionManager: " + executionManager.toString() + "}";
+                "\n executionManager: " + executions.toString() + "}";
     }
 }

@@ -1,98 +1,110 @@
 package com.htsc.task.engine.domain;
 
-import com.htsc.task.engine.domain.persist.ExecutionPersist;
+import com.htsc.task.engine.repository.ExecutionRepository;
+import com.htsc.task.engine.repository.dataobj.ExecutionDO;
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
+@Data
 public class Execution {
+
+    @Setter(AccessLevel.NONE)
+    @Getter(AccessLevel.NONE)
+    private Logger logger = LoggerFactory.getLogger(Execution.class);
+
     public enum Status {
-        // 任务加入到了任务队列中
-        ACTIVATED,
+        // 加入到了任务队列中，初始化
+        CREATED,
         // 任务执行中
         EXECUTING,
         // 任务执行被暂停
         SUSPENDED,
         // 任务执行被完成
-        DONE,
+        COMPLETED,
         // 任务执行被终止（在一些异常情况下被终止）
         TERMINATED,
         // 任务被取消（正常情况下被取消掉）
         DROPPED
     }
-
-    private Task task; // 这个execution对应的Task
     private final String id; // 任务执行实例自己的ID
+    private Task task; // 这个execution对应的Task
     private Status status;
-    private Handler handler;
-    private ExecutionPersist persist;
+    private String executor;
 
-    public Execution(Task task, Handler handler) {
-        this.task = task;
-        this.handler = handler;
+    @Setter(AccessLevel.NONE)
+    @Getter(AccessLevel.NONE)
+    private ExecutionRepository executionRepository;
+
+    public Execution(Task task, String executor, ExecutionRepository executionRepository) {
         id = UUID.randomUUID().toString();
-        status = Status.ACTIVATED;
+        this.task = task;
+        this.executor = executor;
+        this.executionRepository = executionRepository;
+        status = Status.CREATED;
     }
 
-    public Execution(String id, ExecutionPersist persist) {
-        this.id = id;
-        this.persist = persist;
-    }
-
-    // 获取当前execution的状态
-    public Status getCurrentStatus() {
-        return status;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public Handler getHandler() {
-        return handler;
-    }
-
-    public Task getTask() {
-        return task;
-    }
-
-    // 完成任务
-    public void done() {
+    // 当前实例执行完成
+    public void complete() {
         if (status.equals(Status.EXECUTING)) {
-            status = Status.DONE;
+            status = Status.COMPLETED;
             // 调用task的方法，更新其他整个execution
-            task.completeCheck();
-            System.out.println("execution is completed");
+            task.checkCompletion();
+            logger.info("execution is completed");
         } else {
-            System.out.println("execution complete error");
+            logger.info("execution complete error");
         }
     }
     // 暂停任务
     public void suspend() {
-        if (status.equals(Status.ACTIVATED)) {
+        if (status.equals(Status.EXECUTING)) {
             status = Status.SUSPENDED;
         }
     }
     // 恢复暂停任务
     public void unsuspend() {
         if (status.equals(Status.SUSPENDED)) {
-            status = Status.ACTIVATED;
+            status = Status.EXECUTING;
         }
     }
-
+    // 开始一个任务
     public void start() {
-        status = Status.EXECUTING;
+        if (status.equals(Status.CREATED)) {
+            status = Status.EXECUTING;
+        }
     }
-
+    // 丢弃一个任务
     public void drop() {
-        status = Status.DROPPED;
+        if (!status.equals(Status.COMPLETED)) {
+            status = Status.DROPPED;
+        }
     }
-
+    // 终止任务
+    public void terminate() {
+        if (status.equals(Status.EXECUTING)) {
+            status = Status.TERMINATED;
+        }
+    }
+    // 转办任务
+    public void forward(String other) {
+        if (status.equals(Status.EXECUTING)) {
+            executor = other;
+        }
+    }
     public void save() {
-        persist.save(this);
+        executionRepository.save(this.toDataObject());
     }
 
     public void restore() {
-        persist.query(id, this);
+    }
+
+    public ExecutionDO toDataObject() {
+        return new ExecutionDO();
     }
 
     @Override
