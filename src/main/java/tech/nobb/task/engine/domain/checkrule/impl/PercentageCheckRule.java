@@ -5,7 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import tech.nobb.task.engine.domain.checkrule.CompleteCheckRule;
 import tech.nobb.task.engine.repository.ConfigRepository;
-import tech.nobb.task.engine.repository.dataobj.ConfigDO;
+import tech.nobb.task.engine.repository.dataobj.ConfigPO;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
@@ -41,6 +41,11 @@ public class PercentageCheckRule implements CompleteCheckRule {
         this.configRepository = configRepository;
     }
 
+    public PercentageCheckRule(String id, ConfigRepository configRepository) {
+        this.id = id;
+        this.configRepository = configRepository;
+    }
+
     @Override
     public boolean complete(Task task) {
         Map<String, Execution> executions = task.getExecutions();
@@ -68,19 +73,19 @@ public class PercentageCheckRule implements CompleteCheckRule {
 
     @Override
     public void save() {
-        configRepository.save(toDataObject());
+        configRepository.save(toPO());
     }
 
     @Override
-    public ConfigDO toDataObject() {
-        return new ConfigDO(id, "COMPLETE_CHECK_RULE", name, toJSON());
+    public ConfigPO toPO() {
+        return new ConfigPO(id, "COMPLETE_CHECK_RULE", name, toJSON());
     }
 
     @Override
     public void restore() {
-        ConfigDO configDO = configRepository.findById(id).orElseGet(null);
+        ConfigPO configPO = configRepository.findById(id).orElseGet(null);
         try {
-            PercentageCheckRule rule = mapper.readValue(configDO.getProperty(), PercentageCheckRule.class);
+            PercentageCheckRule rule = mapper.readValue(configPO.getProperty(), PercentageCheckRule.class);
             this.name = rule.getName();
             this.percentThreshold = rule.getPercentThreshold();
         } catch (JsonProcessingException e) {

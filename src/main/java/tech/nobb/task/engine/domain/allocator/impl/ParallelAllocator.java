@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import tech.nobb.task.engine.domain.allocator.TaskAllocator;
 import tech.nobb.task.engine.repository.ConfigRepository;
-import tech.nobb.task.engine.repository.dataobj.ConfigDO;
+import tech.nobb.task.engine.repository.dataobj.ConfigPO;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
@@ -32,6 +32,11 @@ public class ParallelAllocator implements TaskAllocator {
         this.configRepository = configRepository;
     }
 
+    public ParallelAllocator(String id, ConfigRepository configRepository) {
+        this.id = id;
+        this.configRepository = configRepository;
+    }
+
     @Override
     public void allocate(Task task) {
         Map<String, Execution> executions = task.getExecutions();
@@ -45,19 +50,19 @@ public class ParallelAllocator implements TaskAllocator {
 
     @Override
     public void save() {
-        configRepository.save(toDataObject());
+        configRepository.save(toPO());
     }
 
     @Override
-    public ConfigDO toDataObject() {
-        return new ConfigDO(id, "ALLOCATOR", name, toJSON());
+    public ConfigPO toPO() {
+        return new ConfigPO(id, "ALLOCATOR", name, toJSON());
     }
 
     @Override
     public void restore() {
-        ConfigDO configDO = configRepository.findById(id).orElseGet(null);
+        ConfigPO configPO = configRepository.findById(id).orElseGet(null);
         try {
-            ParallelAllocator allocator = mapper.readValue(configDO.getProperty(), ParallelAllocator.class);
+            ParallelAllocator allocator = mapper.readValue(configPO.getProperty(), ParallelAllocator.class);
             this.name = allocator.getName();
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);

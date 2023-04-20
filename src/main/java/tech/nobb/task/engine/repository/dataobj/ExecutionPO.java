@@ -14,12 +14,12 @@ import javax.persistence.Table;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "execution")
-public class ExecutionDO {
+public class ExecutionPO {
     @Id
     private String id;
     @Column(name = "executor_id")
     private String executorId;
-    @Column(name = "task_id")
+    @Column(name = "task_id", nullable = false)
     private String taskId;
     @Column(name = "status")
     private String status;

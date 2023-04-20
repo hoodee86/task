@@ -14,11 +14,13 @@ import javax.persistence.Table;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "task")
-public class TaskDO {
+public class TaskPO {
     @Id
     private String id;
-    @Column(name = "parent")
+    @Column(name = "parent", nullable = false)
     private String parent;
+    @Column(name = "root", nullable = false)
+    private String root;
     @Column(name = "name")
     private String name;
     @Column(name = "priority")

@@ -11,7 +11,7 @@ import javax.persistence.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "config")
-public class ConfigDO {
+public class ConfigPO {
     @Id
     private String id;
     @Column(name = "type")

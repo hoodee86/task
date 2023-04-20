@@ -5,7 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import tech.nobb.task.engine.domain.allocator.TaskAllocator;
 import tech.nobb.task.engine.repository.ConfigRepository;
-import tech.nobb.task.engine.repository.dataobj.ConfigDO;
+import tech.nobb.task.engine.repository.dataobj.ConfigPO;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
@@ -76,19 +76,19 @@ public class SerialAllocator implements TaskAllocator {
 
     @Override
     public void save() {
-        configRepository.save(toDataObject());
+        configRepository.save(toPO());
     }
 
     @Override
-    public ConfigDO toDataObject() {
-        return new ConfigDO(id, "ALLOCATOR", name, toJSON());
+    public ConfigPO toPO() {
+        return new ConfigPO(id, "ALLOCATOR", name, toJSON());
     }
 
     @Override
     public void restore() {
-        ConfigDO configDO = configRepository.findById(id).orElseGet(null);
+        ConfigPO configPO = configRepository.findById(id).orElseGet(null);
         try {
-            SerialAllocator allocator = mapper.readValue(configDO.getProperty(), SerialAllocator.class);
+            SerialAllocator allocator = mapper.readValue(configPO.getProperty(), SerialAllocator.class);
             this.order = allocator.getOrder();
             this.name = allocator.getName();
         } catch (JsonProcessingException e) {

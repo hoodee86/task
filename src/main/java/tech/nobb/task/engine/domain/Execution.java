@@ -1,7 +1,7 @@
 package tech.nobb.task.engine.domain;
 
 import tech.nobb.task.engine.repository.ExecutionRepository;
-import tech.nobb.task.engine.repository.dataobj.ExecutionDO;
+import tech.nobb.task.engine.repository.dataobj.ExecutionPO;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
@@ -47,6 +47,14 @@ public class Execution {
         this.executor = executor;
         this.executionRepository = executionRepository;
         status = Status.CREATED;
+    }
+
+    public Execution(String id, String executor, Status status, Task task, ExecutionRepository executionRepository) {
+        this.id = id;
+        this.task = task;
+        this.status = status;
+        this.executor = executor;
+        this.executionRepository = executionRepository;
     }
 
     // 当前实例执行完成
@@ -97,21 +105,22 @@ public class Execution {
         }
     }
     public void save() {
-        executionRepository.save(this.toDataObject());
+        executionRepository.save(this.toPO());
     }
 
+    /*
     // ！！！注意：execution对象的还原无法单独还原，必须通过其Task对象进行还原。
     public void restore(Task task) {
-        ExecutionDO executionDO = executionRepository.findById(id).orElseGet(null);
-        if (task.getId().equals(executionDO.getTaskId())) {
-            this.executor = executionDO.getExecutorId();
+        ExecutionPO executionPO = executionRepository.findById(id).orElseGet(null);
+        if (task.getId().equals(executionPO.getTaskId())) {
+            this.executor = executionPO.getExecutorId();
             this.task = task;
-            this.status = Status.valueOf(executionDO.getStatus());
+            this.status = Status.valueOf(executionPO.getStatus());
         }
-    }
+    }*/
 
-    public ExecutionDO toDataObject() {
-        return new ExecutionDO();
+    public ExecutionPO toPO() {
+        return new ExecutionPO();
     }
 
     @Override
