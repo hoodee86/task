@@ -77,8 +77,8 @@
                         </path>
                         <!--下面这个 项目中不使用 Lombok的话 不用加-->
                         <path>
-                            <groupid>org.projectlombok</groupid>
-                            <artifactid>lombok</artifactid>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
                             <version>${lombok.version}</version>
                         </path>
                     </annotationProcessorPaths>

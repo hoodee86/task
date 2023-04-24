@@ -9,6 +9,8 @@ import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.persistence.Column;
+import javax.persistence.Id;
 import java.util.UUID;
 
 @Data
@@ -120,7 +122,12 @@ public class Execution {
     }*/
 
     public ExecutionPO toPO() {
-        return new ExecutionPO();
+        return new ExecutionPO(
+                id,
+                executor,
+                task.getId(),
+                status.name()
+        );
     }
 
     @Override

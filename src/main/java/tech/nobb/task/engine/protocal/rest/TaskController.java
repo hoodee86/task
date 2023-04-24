@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import tech.nobb.task.engine.protocal.rest.dto.SimpleTaskCreateRequest;
 import tech.nobb.task.engine.protocal.rest.dto.TaskCreateAndAssignRequest;
+import tech.nobb.task.engine.protocal.rest.vo.TaskVO;
+import tech.nobb.task.engine.service.TaskCompoundService;
 import tech.nobb.task.engine.service.TaskCreateService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api")
 public class TaskController {
@@ -21,6 +25,8 @@ public class TaskController {
 
     @Autowired
     private TaskCreateService taskCreateService;
+    @Autowired
+    TaskCompoundService taskCompoundService;
     @Autowired
     private ObjectMapper mapper;
 
@@ -43,6 +49,11 @@ public class TaskController {
             e.printStackTrace();
         }
         taskCreateService.newTaskAndAssign(taskCreateAndAssignRequest);
+    }
+
+    @RequestMapping(value = "/task-list-executor", method = RequestMethod.POST)
+    public List<TaskVO> taskListByExecutor(String executor) {
+        return taskCompoundService.queryTasksByExecutor(executor);
     }
 
 }

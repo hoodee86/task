@@ -49,8 +49,8 @@ public class TaskCreateService extends BaseService{
     public void newTaskAndAssign(TaskCreateAndAssignRequest taskCreateAndAssignRequest) {
         Task task = newSimpleTask(new SimpleTaskCreateRequest(
                                     taskCreateAndAssignRequest.getName(),
-                                    taskCreateAndAssignRequest.getThreshold(),
                                     taskCreateAndAssignRequest.getCheckRule(),
+                                    taskCreateAndAssignRequest.getThreshold(),
                                     taskCreateAndAssignRequest.getAllocator(),
                                     taskCreateAndAssignRequest.getOrder()));
         // 给执行者分配任务

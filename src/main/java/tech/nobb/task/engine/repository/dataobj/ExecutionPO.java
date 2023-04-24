@@ -17,11 +17,11 @@ import javax.persistence.Table;
 public class ExecutionPO {
     @Id
     private String id;
-    @Column(name = "executor_id")
+    @Column(name = "executor_id", nullable = false)
     private String executorId;
     @Column(name = "task_id", nullable = false)
     private String taskId;
-    @Column(name = "status")
+    @Column(name = "status", nullable = false)
     private String status;
 
 }
