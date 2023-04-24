@@ -9,7 +9,7 @@ import tech.nobb.task.engine.repository.dataobj.ExecutionPO;
 import java.util.List;
 
 @Repository
-public interface TaskViewDAO extends JpaRepository<ExecutionPO, String> {
+public interface TaskViewRepository extends JpaRepository<ExecutionPO, String> {
     @Query("select new tech.nobb.task.engine.protocal.rest.vo.TaskVO(e.taskId, e.id, t.name, t.priority, t.status, e.status, e.executorId) from " +
             "TaskPO t left join ExecutionPO e on e.taskId=t.id where e.executorId = :executor")
     public List<TaskVO> findTaskVOSByExecutor(String executor);

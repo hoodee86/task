@@ -8,6 +8,6 @@ import java.util.List;
 @Service
 public class TaskCompoundService  extends BaseService {
     public List<TaskVO> queryTasksByExecutor(String executor) {
-        return taskViewDAO.findTaskVOSByExecutor(executor);
+        return taskViewRepository.findTaskVOSByExecutor(executor);
     }
 }
