@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:mariadb://zeebe.cn:3306/task_engine
-    username: caoxiao
-    password: 1234qwer
+    url: jdbc:mariadb://**.**.**.**:3306/task_engine
+    username:
+    password:
     driver-class-name: org.mariadb.jdbc.Driver
   jpa:
     hibernate:
