@@ -206,15 +206,15 @@ public class Task {
             root = taskPO.getRoot();
             status = Status.valueOf(taskPO.getStatus());
             priority = Priority.valueOf(taskPO.getPriority());
-            if ("-1".equals(taskPO.getParent())) {
-                parent = "-1";
+            if ("null".equals(taskPO.getParent())) {
+                parent = "null";
             } else {
                 parent = taskPO.getParent();
             }
             // 还原配置信息
             ConfigPO allocatorPO = configRepository.findById(taskPO.getAllocatorId()).orElseGet(null);
             ConfigPO completeCheckRulePO = configRepository.findById(taskPO.getCheckRuleId()).orElseGet(null);
-            if (Objects.isNull(allocator) || Objects.isNull(completeCheckRule)) {
+            if (Objects.isNull(allocatorPO) || Objects.isNull(completeCheckRulePO)) {
                 return null;
             }
             if (allocatorPO.getType().equals("ALLOCATOR")) {
@@ -229,7 +229,7 @@ public class Task {
             if (completeCheckRulePO.getType().equals("COMPLETE_CHECK_RULE")) {
                 if (completeCheckRulePO.getName().equals("PERCENT_CHECK_RULE")) {
                     completeCheckRule = new PercentageCheckRule(taskPO.getCheckRuleId(), configRepository);
-                    allocator.restore();
+                    completeCheckRule.restore();
                 }
             }
 

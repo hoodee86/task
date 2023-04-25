@@ -1,11 +1,11 @@
-package tech.nobb.task.engine.protocal.rest.dto;
+package tech.nobb.task.engine.protocal.rest.request;
 
 import lombok.Data;
 
 import java.util.List;
 
 @Data
-public class TaskCreateAndAssignRequest {
+public class CreateAndAssignTaskRequest {
     private String name;
     private String checkRule;
     private String threshold;

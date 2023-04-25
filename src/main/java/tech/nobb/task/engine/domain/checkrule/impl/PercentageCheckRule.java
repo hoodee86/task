@@ -3,13 +3,10 @@ package tech.nobb.task.engine.domain.checkrule.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.*;
 import tech.nobb.task.engine.domain.checkrule.CompleteCheckRule;
 import tech.nobb.task.engine.repository.ConfigRepository;
 import tech.nobb.task.engine.repository.dataobj.ConfigPO;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tech.nobb.task.engine.domain.Execution;
@@ -19,6 +16,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @Data
+@NoArgsConstructor
 public class PercentageCheckRule implements CompleteCheckRule {
 
     private static ObjectMapper mapper = new ObjectMapper();
@@ -33,7 +31,7 @@ public class PercentageCheckRule implements CompleteCheckRule {
 
     @Setter(AccessLevel.NONE)
     @Getter(AccessLevel.NONE)
-    private final ConfigRepository configRepository;
+    private ConfigRepository configRepository;
     public PercentageCheckRule(double percentThreshold, ConfigRepository configRepository) {
         id = UUID.randomUUID().toString();
         this.percentThreshold = percentThreshold;

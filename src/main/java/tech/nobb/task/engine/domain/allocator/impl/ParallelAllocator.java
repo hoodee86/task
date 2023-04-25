@@ -2,26 +2,24 @@ package tech.nobb.task.engine.domain.allocator.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.*;
 import tech.nobb.task.engine.domain.allocator.TaskAllocator;
 import tech.nobb.task.engine.repository.ConfigRepository;
 import tech.nobb.task.engine.repository.dataobj.ConfigPO;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 import tech.nobb.task.engine.domain.Execution;
 import tech.nobb.task.engine.domain.Task;
 
 import java.util.Map;
 import java.util.UUID;
 @Data
+@NoArgsConstructor
 public class ParallelAllocator implements TaskAllocator {
 
     private static ObjectMapper mapper = new ObjectMapper();
 
     @Setter(AccessLevel.NONE)
     @Getter(AccessLevel.NONE)
-    private final ConfigRepository configRepository;
+    private ConfigRepository configRepository;
 
     private String id;
     private String name;

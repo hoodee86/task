@@ -1,4 +1,4 @@
-package tech.nobb.task.engine.protocal.rest.dto;
+package tech.nobb.task.engine.protocal.rest.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,7 +7,7 @@ import java.util.List;
 
 @Data
 @AllArgsConstructor
-public class SimpleTaskCreateRequest {
+public class CreateSimpleTaskRequest {
 
     private String name;
 
