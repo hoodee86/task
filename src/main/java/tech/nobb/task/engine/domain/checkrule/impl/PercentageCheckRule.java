@@ -52,7 +52,9 @@ public class PercentageCheckRule implements CompleteCheckRule {
                                 .filter(id -> executions.get(id).getStatus().equals(Execution.Status.COMPLETED))
                                 .count();
 
-        long totalCount = executions.keySet().size();
+        long totalCount = executions.keySet().stream()
+                                .filter(id -> !executions.get(id).getStatus().equals(Execution.Status.FORWARDED))
+                                .count();
 
         logger.info(completeCount + "-" + totalCount);
 
