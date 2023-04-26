@@ -71,8 +71,8 @@ public class TaskController {
     }
 
     //暂停一个任务
-    @RequestMapping(value = "/suspend", method = RequestMethod.PUT)
-    public void suspendTask(@RequestParam SuspendTaskRequest suspendTaskRequest) {
+    @RequestMapping(value = "/suspend", method = RequestMethod.POST)
+    public void suspendTask(@RequestBody SuspendTaskRequest suspendTaskRequest) {
         // TODO: 对参数进行校验
         try {
             logger.info(mapper.writeValueAsString(suspendTaskRequest));
@@ -83,8 +83,8 @@ public class TaskController {
     }
 
     //恢复暂停一个任务
-    @RequestMapping(value = "/unsuspend", method = RequestMethod.PUT)
-    public void unsuspendTask(@RequestParam UnsuspendTaskRequest unsuspendTaskRequest) {
+    @RequestMapping(value = "/unsuspend", method = RequestMethod.POST)
+    public void unsuspendTask(@RequestBody UnsuspendTaskRequest unsuspendTaskRequest) {
         // TODO: 对参数进行校验
         try {
             logger.info(mapper.writeValueAsString(unsuspendTaskRequest));
@@ -95,8 +95,8 @@ public class TaskController {
     }
 
     //移交一个任务
-    @RequestMapping(value = "/forward", method = RequestMethod.PUT)
-    public void forwardTask(@RequestParam ForwardTaskRequest forwardTaskRequest) {
+    @RequestMapping(value = "/forward", method = RequestMethod.POST)
+    public void forwardTask(@RequestBody ForwardTaskRequest forwardTaskRequest) {
         // TODO: 对参数进行校验
         try {
             logger.info(mapper.writeValueAsString(forwardTaskRequest));
