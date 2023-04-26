@@ -27,7 +27,7 @@ public class TaskCreateService extends BaseService{
             allocator = new ParallelAllocator(configRepository);
         }
         if ("serial".equals(createSimpleTaskRequest.getAllocator())) {
-            allocator = new SerialAllocator(configRepository);
+            allocator = new SerialAllocator(createSimpleTaskRequest.getOrder(), configRepository);
         }
         if (Objects.nonNull(checkRule) && Objects.nonNull(allocator)) {
             Task task = new Task(
