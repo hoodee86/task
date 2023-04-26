@@ -6,7 +6,6 @@ import tech.nobb.task.engine.domain.allocator.TaskAllocator;
 import tech.nobb.task.engine.domain.allocator.impl.ParallelAllocator;
 import tech.nobb.task.engine.domain.allocator.impl.SerialAllocator;
 import tech.nobb.task.engine.protocal.rest.request.CreateSimpleTaskRequest;
-import tech.nobb.task.engine.protocal.rest.request.ClaimTaskRequest;
 import tech.nobb.task.engine.protocal.rest.request.CreateAndAssignTaskRequest;
 import org.springframework.stereotype.Service;
 import tech.nobb.task.engine.domain.Task;

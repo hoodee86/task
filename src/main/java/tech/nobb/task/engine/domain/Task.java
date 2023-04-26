@@ -182,8 +182,10 @@ public class Task {
     // 转让一个任务
     public void forward(String executor, String otherExecutor) {
         Execution execution = executions.get(executor);
-        execution.forward(otherExecutor);
+        Execution forwardExecution = execution.forward(otherExecutor);
+        executions.put(otherExecutor, forwardExecution);
         execution.save();
+        forwardExecution.save();
     }
 
     // 持久化当前任务对象
@@ -242,6 +244,7 @@ public class Task {
                         executions.put(executionPO.getExecutorId(), new Execution(
                                 executionPO.getId(),
                                 executionPO.getExecutorId(),
+                                executionPO.getForwardId(),
                                 Execution.Status.valueOf(executionPO.getStatus()),
                                 this,
                                 executionRepository));

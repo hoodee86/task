@@ -25,6 +25,8 @@ public class Execution {
         CREATED,
         // 任务执行中
         EXECUTING,
+        // 任务被转办
+        FORWARDED,
         // 任务执行被暂停
         SUSPENDED,
         // 任务执行被完成
@@ -38,6 +40,7 @@ public class Execution {
     private Task task; // 这个execution对应的Task
     private Status status;
     private String executor;
+    private String forwarder;
 
     @Setter(AccessLevel.NONE)
     @Getter(AccessLevel.NONE)
@@ -49,13 +52,24 @@ public class Execution {
         this.executor = executor;
         this.executionRepository = executionRepository;
         status = Status.CREATED;
+        forwarder = "";
     }
 
-    public Execution(String id, String executor, Status status, Task task, ExecutionRepository executionRepository) {
+    public Execution(Task task, String executor, Status status, ExecutionRepository executionRepository) {
+        id = UUID.randomUUID().toString();
+        this.task = task;
+        this.executor = executor;
+        this.executionRepository = executionRepository;
+        this.status = status;
+        forwarder = "";
+    }
+
+    public Execution(String id, String executor, String forwarder, Status status, Task task, ExecutionRepository executionRepository) {
         this.id = id;
         this.task = task;
         this.status = status;
         this.executor = executor;
+        this.forwarder = forwarder;
         this.executionRepository = executionRepository;
     }
 
@@ -101,10 +115,19 @@ public class Execution {
         }
     }
     // 转办任务
-    public void forward(String other) {
+    public Execution forward(String other) {
         if (status.equals(Status.EXECUTING)) {
-            executor = other;
+            Execution e =  new Execution(
+                    task,
+                    other,
+                    status,
+                    executionRepository
+            );
+            status = Status.FORWARDED;
+            forwarder = other;
+            return e;
         }
+        return null;
     }
     public void save() {
         executionRepository.save(this.toPO());
@@ -125,6 +148,7 @@ public class Execution {
         return new ExecutionPO(
                 id,
                 executor,
+                forwarder,
                 task.getId(),
                 status.name()
         );
@@ -132,8 +156,8 @@ public class Execution {
 
     @Override
     public String toString() {
-        return "{id: " + id
-                + " status: " + status +"}";
+        return "execution";
     }
+
 
 }

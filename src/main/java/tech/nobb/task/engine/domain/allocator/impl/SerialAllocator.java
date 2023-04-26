@@ -53,12 +53,24 @@ public class SerialAllocator implements TaskAllocator {
     @Override
     public void allocate(Task task) {
         Map<String, Execution> executions = task.getExecutions();
-        for (String id : order) {
-            Execution e = executions.get(id);
+        for (String eid : order) {
+            Execution e = executions.get(eid);
             if (e.getStatus().equals(Execution.Status.CREATED)) {
                 e.start();
                 e.save();
                 break;
+            } else if (executions.get(eid).getStatus().equals(Execution.Status.FORWARDED)) {
+                String tid = executions.get(eid).getForwarder();
+                for (;
+                     executions.get(tid).getStatus().equals(Execution.Status.FORWARDED);
+                     tid = executions.get(tid).getForwarder()) {
+                }
+                e = executions.get(tid);
+                if (e.getStatus().equals(Execution.Status.CREATED)) {
+                    e.start();
+                    e.save();;
+                    break;
+                }
             }
         }
     }

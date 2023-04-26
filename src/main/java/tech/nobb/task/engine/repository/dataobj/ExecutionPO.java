@@ -19,9 +19,10 @@ public class ExecutionPO {
     private String id;
     @Column(name = "executor_id", nullable = false)
     private String executorId;
+    @Column(name = "forward_id")
+    private String forwardId;
     @Column(name = "task_id", nullable = false)
     private String taskId;
     @Column(name = "status", nullable = false)
     private String status;
-
 }
