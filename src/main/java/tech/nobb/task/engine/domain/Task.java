@@ -183,6 +183,7 @@ public class Task {
     public void forward(String executor, String otherExecutor) {
         Execution execution = executions.get(executor);
         execution.forward(otherExecutor);
+        execution.save();
     }
 
     // 持久化当前任务对象

@@ -2,18 +2,12 @@ package tech.nobb.task.engine.protocal.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import tech.nobb.task.engine.protocal.rest.request.CompleteTaskRequest;
-import tech.nobb.task.engine.protocal.rest.request.CreateSimpleTaskRequest;
-import tech.nobb.task.engine.protocal.rest.request.ClaimTaskRequest;
-import tech.nobb.task.engine.protocal.rest.request.CreateAndAssignTaskRequest;
+import org.springframework.web.bind.annotation.*;
+import tech.nobb.task.engine.protocal.rest.request.*;
 import tech.nobb.task.engine.service.TaskCreateService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
 import tech.nobb.task.engine.service.TaskExecuteService;
 
 @RestController
@@ -61,7 +55,7 @@ public class TaskController {
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
-        taskExecuteService.claimOneTask(claimTaskRequest);
+        taskExecuteService.claimTask(claimTaskRequest);
     }
 
     //完成一个任务
@@ -73,13 +67,42 @@ public class TaskController {
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
-        taskExecuteService.completeOneTask(completeTaskRequest);
+        taskExecuteService.completeTask(completeTaskRequest);
     }
 
     //暂停一个任务
+    @RequestMapping(value = "/suspend", method = RequestMethod.PUT)
+    public void suspendTask(@RequestParam SuspendTaskRequest suspendTaskRequest) {
+        // TODO: 对参数进行校验
+        try {
+            logger.info(mapper.writeValueAsString(suspendTaskRequest));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        taskExecuteService.suspendTask(suspendTaskRequest);
+    }
 
     //恢复暂停一个任务
+    @RequestMapping(value = "/unsuspend", method = RequestMethod.PUT)
+    public void unsuspendTask(@RequestParam UnsuspendTaskRequest unsuspendTaskRequest) {
+        // TODO: 对参数进行校验
+        try {
+            logger.info(mapper.writeValueAsString(unsuspendTaskRequest));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        taskExecuteService.unsuspendTask(unsuspendTaskRequest);
+    }
 
     //移交一个任务
-
+    @RequestMapping(value = "/forward", method = RequestMethod.PUT)
+    public void forwardTask(@RequestParam ForwardTaskRequest forwardTaskRequest) {
+        // TODO: 对参数进行校验
+        try {
+            logger.info(mapper.writeValueAsString(forwardTaskRequest));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        taskExecuteService.forwardTask(forwardTaskRequest);
+    }
 }
