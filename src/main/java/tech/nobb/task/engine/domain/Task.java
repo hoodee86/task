@@ -97,6 +97,7 @@ public class Task {
     public void complete(String executor) {
         Execution execution = executions.get(executor);
         execution.complete();
+        execution.save();
     }
 
     public void checkCompletion() {
@@ -238,7 +239,7 @@ public class Task {
             executionPOs.forEach(
                     executionPO -> {
                         executions.put(executionPO.getExecutorId(), new Execution(
-                                executionPO.getTaskId(),
+                                executionPO.getId(),
                                 executionPO.getExecutorId(),
                                 Execution.Status.valueOf(executionPO.getStatus()),
                                 this,
