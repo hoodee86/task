@@ -1,9 +1,11 @@
 spring:
   datasource:
-    url: jdbc:mariadb://**.**.**.**:3306/task_engine
+    url: jdbc:mariadb://:3306/task_engine
     username:
     password:
     driver-class-name: org.mariadb.jdbc.Driver
+    hikari:
+      max-lifetime: 590000
   jpa:
     hibernate:
       ddl-auto: create-drop
