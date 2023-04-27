@@ -181,6 +181,10 @@ public class Task {
 
     // 转让一个任务
     public void forward(String executor, String otherExecutor) {
+        // 自己不可以转发给自己
+        if (executor.equals(otherExecutor)) {
+            return;
+        }
         Execution execution = executions.get(executor);
         Execution forwardExecution = execution.forward(otherExecutor);
         executions.put(otherExecutor, forwardExecution);
@@ -241,13 +245,16 @@ public class Task {
             List<ExecutionPO> executionPOs = executionRepository.findByTaskId(id);
             executionPOs.forEach(
                     executionPO -> {
-                        executions.put(executionPO.getExecutorId(), new Execution(
-                                executionPO.getId(),
-                                executionPO.getExecutorId(),
-                                executionPO.getForwardId(),
-                                Execution.Status.valueOf(executionPO.getStatus()),
-                                this,
-                                executionRepository));
+                        // FORWARDED状态需要被丢弃掉，没有意义
+                        if (!executionPO.getStatus().equals("FORWARDED")) {
+                            executions.put(executionPO.getExecutorId(), new Execution(
+                                    executionPO.getId(),
+                                    executionPO.getExecutorId(),
+                                    executionPO.getForwardId(),
+                                    Execution.Status.valueOf(executionPO.getStatus()),
+                                    this,
+                                    executionRepository));
+                        }
                     }
             );
 

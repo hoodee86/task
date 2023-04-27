@@ -10,10 +10,7 @@ import tech.nobb.task.engine.repository.dataobj.ConfigPO;
 import tech.nobb.task.engine.domain.Execution;
 import tech.nobb.task.engine.domain.Task;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Data
 @NoArgsConstructor
@@ -55,22 +52,10 @@ public class SerialAllocator implements TaskAllocator {
         Map<String, Execution> executions = task.getExecutions();
         for (String eid : order) {
             Execution e = executions.get(eid);
-            if (e.getStatus().equals(Execution.Status.CREATED)) {
+            if (Objects.nonNull(e) && e.getStatus().equals(Execution.Status.CREATED)) {
                 e.start();
                 e.save();
                 break;
-            } else if (executions.get(eid).getStatus().equals(Execution.Status.FORWARDED)) {
-                String tid = executions.get(eid).getForwarder();
-                for (;
-                     executions.get(tid).getStatus().equals(Execution.Status.FORWARDED);
-                     tid = executions.get(tid).getForwarder()) {
-                }
-                e = executions.get(tid);
-                if (e.getStatus().equals(Execution.Status.CREATED)) {
-                    e.start();
-                    e.save();;
-                    break;
-                }
             }
         }
     }
