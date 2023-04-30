@@ -14,5 +14,5 @@ public class BaseService {
     @Autowired protected ExecutionRepository executionRepository;
     @Autowired protected ConfigRepository configRepository;
     @Autowired protected TaskViewRepository taskViewRepository;
-    @Autowired protected ZeebeClient zeebeClient;
+    protected ZeebeClient zeebeClient;
 }
