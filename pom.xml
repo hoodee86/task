@@ -8,11 +8,11 @@
         <version>2.7.10</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>com.htsc</groupId>
-    <artifactId>TaskEngine</artifactId>
+    <groupId>tech.nobb</groupId>
+    <artifactId>task</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>TaskEngine</name>
-    <description>TaskEngine</description>
+    <name>task</name>
+    <description>task</description>
     <properties>
         <java.version>1.8</java.version>
     </properties>
