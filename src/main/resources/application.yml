@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:mariadb://:3306/task_engine
+    url: jdbc:mariadb://**.**.**.**:3306/task_engine
     username:
     password:
     driver-class-name: org.mariadb.jdbc.Driver
@@ -10,3 +10,9 @@ spring:
     hibernate:
       ddl-auto: create-drop
     show-sql: true
+zeebe:
+  client:
+    broker:
+      gatewayAddress: zeebe.cn:26500
+    security:
+      plaintext: true
