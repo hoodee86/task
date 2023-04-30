@@ -17,6 +17,8 @@ public class CreateSimpleTaskRequest {
 
     private String allocator;
 
+    private long zeebeJobKey;
+
     private List<String> order;
 
 }

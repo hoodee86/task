@@ -35,10 +35,11 @@ public class TaskCreateService extends BaseService{
                     null,
                     checkRule,
                     allocator,
+                    createSimpleTaskRequest.getZeebeJobKey(),
                     taskRepository,
                     executionRepository,
-                    configRepository
-            );
+                    configRepository,
+                    zeebeClient);
             task.save();
             return task;
         }
@@ -52,9 +53,11 @@ public class TaskCreateService extends BaseService{
                                     createAndAssignTaskRequest.getCheckRule(),
                                     createAndAssignTaskRequest.getThreshold(),
                                     createAndAssignTaskRequest.getAllocator(),
+                                    createAndAssignTaskRequest.getZeebeJobKey(),
                                     createAndAssignTaskRequest.getOrder()));
         // 给执行者分配任务
         task.assign(createAndAssignTaskRequest.getExecutors());
     }
+
 
 }

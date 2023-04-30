@@ -31,5 +31,7 @@ public class TaskPO {
     private String checkRuleId;
     @Column(name = "allocator_id")
     private String allocatorId;
+    @Column(name = "zeebe_job_key")
+    private long zeebeJobKey;
 
 }

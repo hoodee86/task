@@ -1,5 +1,6 @@
 package tech.nobb.task.engine.domain;
 
+import io.camunda.zeebe.client.ZeebeClient;
 import tech.nobb.task.engine.domain.allocator.impl.ParallelAllocator;
 import tech.nobb.task.engine.domain.allocator.impl.SerialAllocator;
 import tech.nobb.task.engine.domain.checkrule.CompleteCheckRule;
@@ -44,6 +45,7 @@ public class Task {
     private String parent;
     private CompleteCheckRule completeCheckRule;
     private TaskAllocator allocator;
+    private long zeebeJobKey;
     @Setter(AccessLevel.NONE)
     @Getter(AccessLevel.NONE)
     private final TaskRepository taskRepository;
@@ -53,23 +55,28 @@ public class Task {
     @Setter(AccessLevel.NONE)
     @Getter(AccessLevel.NONE)
     private final ConfigRepository configRepository;
+    @Setter(AccessLevel.NONE)
+    @Getter(AccessLevel.NONE)
+    private ZeebeClient zeebeClient;
 
-    // 构建一个全新的任务对象
+    // 构建一个全新的任务对象, 不是流程触发的，是人工触发的。
     public Task(String name,
                 Priority priority,
                 String parent,
                 CompleteCheckRule completeCheckRule,
                 TaskAllocator allocator,
+                long zeebeJobKey,
                 TaskRepository taskRepository,
                 ExecutionRepository executionRepository,
-                ConfigRepository configRepository
-                ) {
+                ConfigRepository configRepository,
+                ZeebeClient zeebeClient) {
         this.id = UUID.randomUUID().toString();
         this.name = name;
         this.priority = priority;
         this.subtask = new HashMap<String, Task>();
         this.completeCheckRule = completeCheckRule;
         this.allocator = allocator;
+        this.zeebeJobKey = zeebeJobKey;
         this.executions = new HashMap<String, Execution>();
         this.root = "-1";
         this.parent = parent;
@@ -78,19 +85,22 @@ public class Task {
         this.taskRepository = taskRepository;
         this.executionRepository = executionRepository;
         this.configRepository = configRepository;
+        this.zeebeClient = zeebeClient;
     }
 
     // 根据ID构建一个空任务对象
     public Task(String id,
                 TaskRepository taskRepository,
                 ExecutionRepository executionRepository,
-                ConfigRepository configRepository) {
+                ConfigRepository configRepository,
+                ZeebeClient zeebeClient) {
         this.id = id;
         this.taskRepository = taskRepository;
         this.executionRepository = executionRepository;
         this.configRepository = configRepository;
         this.subtask = new HashMap<>();
         this.executions = new HashMap<String, Execution>();
+        this.zeebeClient = zeebeClient;
     }
 
     // 完成一个任务
@@ -106,6 +116,10 @@ public class Task {
             status = Status.COMPLETED;
             // 将TASK进行扫尾
             onCompleted();
+            // 向zeebe broker发送该任务完成
+            if (zeebeJobKey !=  -1) {
+                zeebeClient.newCompleteCommand(zeebeJobKey).send().join();
+            }
         } else {
             allocator.allocate(this);
         }
@@ -214,6 +228,7 @@ public class Task {
             root = taskPO.getRoot();
             status = Status.valueOf(taskPO.getStatus());
             priority = Priority.valueOf(taskPO.getPriority());
+            zeebeJobKey = taskPO.getZeebeJobKey();
             if ("null".equals(taskPO.getParent())) {
                 parent = "null";
             } else {
@@ -267,7 +282,8 @@ public class Task {
                                 new Task(subtaskPO.getId(),
                                         taskRepository,
                                         executionRepository,
-                                        configRepository).
+                                        configRepository,
+                                        zeebeClient).
                                         restore());
                     }
             );
@@ -291,7 +307,8 @@ public class Task {
                     name, priority.name(),
                     status.name(),
                     completeCheckRule.getId(),
-                    allocator.getId());
+                    allocator.getId(),
+                    zeebeJobKey);
         } else {
             return new TaskPO(id,
                     "null",
@@ -299,7 +316,8 @@ public class Task {
                     name, priority.name(),
                     status.name(),
                     completeCheckRule.getId(),
-                    allocator.getId());
+                    allocator.getId(),
+                    zeebeJobKey);
         }
 
     }

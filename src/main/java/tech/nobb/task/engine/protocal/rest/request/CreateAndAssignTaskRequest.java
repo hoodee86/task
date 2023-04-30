@@ -10,6 +10,7 @@ public class CreateAndAssignTaskRequest {
     private String checkRule;
     private String threshold;
     private String allocator;
+    private long zeebeJobKey;
     private List<String> order;
     private List<String> executors;
 }
