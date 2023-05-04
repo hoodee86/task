@@ -235,6 +235,8 @@ public class Task {
             status = Status.valueOf(taskEntity.getStatus());
             priority = Priority.valueOf(taskEntity.getPriority());
             zeebeJobKey = taskEntity.getZeebeJobKey();
+            originator = taskEntity.getOriginatorId();
+            createTime = taskEntity.getCreateTime();
             if ("null".equals(taskEntity.getParent())) {
                 parent = "null";
             } else {

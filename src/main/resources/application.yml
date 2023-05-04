@@ -1,6 +1,7 @@
 spring:
+  config.activate.on-profile: dev
   datasource:
-    url: jdbc:mariadb://**.**.**.**:3306/task_engine
+    url: jdbc:mariadb://:3306/task_engine_dev
     username:
     password:
     driver-class-name: org.mariadb.jdbc.Driver
@@ -13,6 +14,30 @@ spring:
 zeebe:
   client:
     broker:
-      gatewayAddress: zeebe.cn:26500
+      gatewayAddress: :26500
     security:
       plaintext: true
+---
+spring:
+  config.activate.on-profile: prod
+  datasource:
+    url: jdbc:mariadb://:3306/task_engine
+    username:
+    password:
+    driver-class-name: org.mariadb.jdbc.Driver
+    hikari:
+      max-lifetime: 590000
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+zeebe:
+  client:
+    broker:
+      gatewayAddress: :26500
+    security:
+      plaintext: true
+---
+spring:
+  profiles:
+    active: prod
