@@ -9,9 +9,9 @@ import tech.nobb.task.engine.domain.checkrule.impl.PercentageCheckRule;
 import tech.nobb.task.engine.repository.ConfigRepository;
 import tech.nobb.task.engine.repository.ExecutionRepository;
 import tech.nobb.task.engine.repository.TaskRepository;
-import tech.nobb.task.engine.repository.dataobj.ConfigPO;
-import tech.nobb.task.engine.repository.dataobj.ExecutionPO;
-import tech.nobb.task.engine.repository.dataobj.TaskPO;
+import tech.nobb.task.engine.repository.entity.ConfigEntity;
+import tech.nobb.task.engine.repository.entity.ExecutionEntity;
+import tech.nobb.task.engine.repository.entity.TaskEntity;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
@@ -38,6 +38,9 @@ public class Task {
     private final String id;
     private String name;
     private Priority priority;
+    // 增加创建”信息“和创建时间
+    private String originator;
+    private Date createTime;
     private Map<String, Execution> executions;
     private Status status;
     private Map<String, Task> subtask;
@@ -66,6 +69,7 @@ public class Task {
                 CompleteCheckRule completeCheckRule,
                 TaskAllocator allocator,
                 long zeebeJobKey,
+                String originator,
                 TaskRepository taskRepository,
                 ExecutionRepository executionRepository,
                 ConfigRepository configRepository,
@@ -86,6 +90,8 @@ public class Task {
         this.executionRepository = executionRepository;
         this.configRepository = configRepository;
         this.zeebeClient = zeebeClient;
+        this.originator = originator;
+        this.createTime = new Date();
     }
 
     // 根据ID构建一个空任务对象
@@ -142,7 +148,7 @@ public class Task {
 
     // 一个执行者认领一个任务
     public void claim(String executor) {
-        Execution execution = new Execution(this, executor, executionRepository);
+        Execution execution = new Execution(this, executor, Execution.Status.CREATED, executionRepository);
         executions.put(executor, execution);
         execution.start();
         execution.save();
@@ -153,7 +159,7 @@ public class Task {
     }
     // 给一个执行者分配一个任务
     public Execution assign(String executor) {
-        Execution execution = new Execution(this, executor, executionRepository);
+        Execution execution = new Execution(this, executor, Execution.Status.CREATED, executionRepository);
         executions.put(executor, execution);
         allocator.allocate(this);
         if (status.equals(Status.CREATED)) {
@@ -166,7 +172,7 @@ public class Task {
     public List<Execution> assign(List<String> executors) {
         List<Execution> results = new ArrayList<>();
         executors.forEach(e -> {
-            Execution execution = new Execution(this, e, executionRepository);
+            Execution execution = new Execution(this, e, Execution.Status.CREATED, executionRepository);
             execution.save();
             executions.put(e, execution);
             results.add(execution);
@@ -210,7 +216,7 @@ public class Task {
     public void save() {
         completeCheckRule.save();
         allocator.save();
-        taskRepository.save(toPO());
+        taskRepository.save(toEntity());
     }
 
     // 根据当前对象id还原当前task对象
@@ -219,67 +225,68 @@ public class Task {
     }
 
     private Task restore(String id) {
-        TaskPO taskPO = taskRepository.findById(id).orElseGet(null);
-        if (Objects.isNull(taskPO)) {
+        TaskEntity taskEntity = taskRepository.findById(id).orElseGet(null);
+        if (Objects.isNull(taskEntity)) {
             return null;
         } else {
             // 还原当前的task对象
-            name = taskPO.getName();
-            root = taskPO.getRoot();
-            status = Status.valueOf(taskPO.getStatus());
-            priority = Priority.valueOf(taskPO.getPriority());
-            zeebeJobKey = taskPO.getZeebeJobKey();
-            if ("null".equals(taskPO.getParent())) {
+            name = taskEntity.getName();
+            root = taskEntity.getRoot();
+            status = Status.valueOf(taskEntity.getStatus());
+            priority = Priority.valueOf(taskEntity.getPriority());
+            zeebeJobKey = taskEntity.getZeebeJobKey();
+            if ("null".equals(taskEntity.getParent())) {
                 parent = "null";
             } else {
-                parent = taskPO.getParent();
+                parent = taskEntity.getParent();
             }
             // 还原配置信息
-            ConfigPO allocatorPO = configRepository.findById(taskPO.getAllocatorId()).orElseGet(null);
-            ConfigPO completeCheckRulePO = configRepository.findById(taskPO.getCheckRuleId()).orElseGet(null);
+            ConfigEntity allocatorPO = configRepository.findById(taskEntity.getAllocatorId()).orElseGet(null);
+            ConfigEntity completeCheckRulePO = configRepository.findById(taskEntity.getCheckRuleId()).orElseGet(null);
             if (Objects.isNull(allocatorPO) || Objects.isNull(completeCheckRulePO)) {
                 return null;
             }
             if (allocatorPO.getType().equals("ALLOCATOR")) {
                 if (allocatorPO.getName().equals("PARALLEL")) {
-                    allocator = new ParallelAllocator(taskPO.getAllocatorId(), configRepository);
+                    allocator = new ParallelAllocator(taskEntity.getAllocatorId(), configRepository);
                     allocator.restore();
                 } else if (allocatorPO.getName().equals("SERIAL")) {
-                    allocator = new SerialAllocator(taskPO.getAllocatorId(), configRepository);
+                    allocator = new SerialAllocator(taskEntity.getAllocatorId(), configRepository);
                     allocator.restore();
                 }
             }
             if (completeCheckRulePO.getType().equals("COMPLETE_CHECK_RULE")) {
                 if (completeCheckRulePO.getName().equals("PERCENT_CHECK_RULE")) {
-                    completeCheckRule = new PercentageCheckRule(taskPO.getCheckRuleId(), configRepository);
+                    completeCheckRule = new PercentageCheckRule(taskEntity.getCheckRuleId(), configRepository);
                     completeCheckRule.restore();
                 }
             }
 
             // 还原executions
-            List<ExecutionPO> executionPOs = executionRepository.findByTaskId(id);
-            executionPOs.forEach(
-                    executionPO -> {
+            List<ExecutionEntity> executionEntities = executionRepository.findByTaskId(id);
+            executionEntities.forEach(
+                    executionEntity -> {
                         // FORWARDED状态需要被丢弃掉，没有意义
-                        if (!executionPO.getStatus().equals("FORWARDED")) {
-                            executions.put(executionPO.getExecutorId(), new Execution(
-                                    executionPO.getId(),
-                                    executionPO.getExecutorId(),
-                                    executionPO.getForwardId(),
-                                    Execution.Status.valueOf(executionPO.getStatus()),
+                        if (!executionEntity.getStatus().equals("FORWARDED")) {
+                            executions.put(executionEntity.getExecutorId(), new Execution(
+                                    executionEntity.getId(),
+                                    executionEntity.getExecutorId(),
+                                    executionEntity.getForwardId(),
+                                    Execution.Status.valueOf(executionEntity.getStatus()),
                                     this,
+                                    executionEntity.getCreateTime(),
                                     executionRepository));
                         }
                     }
             );
 
             // 初始化构建subtasks
-            List<TaskPO> subtaskPOs = taskRepository.findByParent(taskPO.getId());
+            List<TaskEntity> subtaskEntities = taskRepository.findByParent(taskEntity.getId());
             // 递归restore每一个子任务
-            subtaskPOs.forEach(
-                    subtaskPO -> {
-                        subtask.put(subtaskPO.getId(),
-                                new Task(subtaskPO.getId(),
+            subtaskEntities.forEach(
+                    subtaskEntity -> {
+                        subtask.put(subtaskEntity.getId(),
+                                new Task(subtaskEntity.getId(),
                                         taskRepository,
                                         executionRepository,
                                         configRepository,
@@ -299,25 +306,29 @@ public class Task {
         return restore(parent);
     }
 
-    public TaskPO toPO() {
+    public TaskEntity toEntity() {
         if (Objects.nonNull(parent)) {
-            return new TaskPO(id,
+            return new TaskEntity(id,
                     parent,
                     this.id,
                     name, priority.name(),
                     status.name(),
                     completeCheckRule.getId(),
                     allocator.getId(),
-                    zeebeJobKey);
+                    zeebeJobKey,
+                    originator,
+                    createTime);
         } else {
-            return new TaskPO(id,
+            return new TaskEntity(id,
                     "null",
                     this.id,
                     name, priority.name(),
                     status.name(),
                     completeCheckRule.getId(),
                     allocator.getId(),
-                    zeebeJobKey);
+                    zeebeJobKey,
+                    originator,
+                    createTime);
         }
 
     }

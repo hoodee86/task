@@ -1,7 +1,7 @@
 package tech.nobb.task.engine.domain;
 
 import tech.nobb.task.engine.repository.ExecutionRepository;
-import tech.nobb.task.engine.repository.dataobj.ExecutionPO;
+import tech.nobb.task.engine.repository.entity.ExecutionEntity;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
@@ -9,8 +9,7 @@ import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.persistence.Column;
-import javax.persistence.Id;
+import java.util.Date;
 import java.util.UUID;
 
 @Data
@@ -41,19 +40,11 @@ public class Execution {
     private Status status;
     private String executor;
     private String forwarder;
-
+    // 增加创建时间
+    private Date createTime;
     @Setter(AccessLevel.NONE)
     @Getter(AccessLevel.NONE)
     private ExecutionRepository executionRepository;
-
-    public Execution(Task task, String executor, ExecutionRepository executionRepository) {
-        id = UUID.randomUUID().toString();
-        this.task = task;
-        this.executor = executor;
-        this.executionRepository = executionRepository;
-        status = Status.CREATED;
-        forwarder = "";
-    }
 
     public Execution(Task task, String executor, Status status, ExecutionRepository executionRepository) {
         id = UUID.randomUUID().toString();
@@ -62,14 +53,22 @@ public class Execution {
         this.executionRepository = executionRepository;
         this.status = status;
         forwarder = "";
+        createTime = new Date();
     }
 
-    public Execution(String id, String executor, String forwarder, Status status, Task task, ExecutionRepository executionRepository) {
+    public Execution(String id,
+                     String executor,
+                     String forwarder,
+                     Status status,
+                     Task task,
+                     Date createTime,
+                     ExecutionRepository executionRepository) {
         this.id = id;
         this.task = task;
         this.status = status;
         this.executor = executor;
         this.forwarder = forwarder;
+        this.createTime = createTime;
         this.executionRepository = executionRepository;
     }
 
@@ -130,13 +129,13 @@ public class Execution {
         return null;
     }
     public void save() {
-        executionRepository.save(this.toPO());
+        executionRepository.save(this.toEntity());
     }
 
     /*
     // ！！！注意：execution对象的还原无法单独还原，必须通过其Task对象进行还原。
     public void restore(Task task) {
-        ExecutionPO executionPO = executionRepository.findById(id).orElseGet(null);
+        ExecutionEntity executionPO = executionRepository.findById(id).orElseGet(null);
         if (task.getId().equals(executionPO.getTaskId())) {
             this.executor = executionPO.getExecutorId();
             this.task = task;
@@ -144,13 +143,14 @@ public class Execution {
         }
     }*/
 
-    public ExecutionPO toPO() {
-        return new ExecutionPO(
+    public ExecutionEntity toEntity() {
+        return new ExecutionEntity(
                 id,
                 executor,
                 forwarder,
                 task.getId(),
-                status.name()
+                status.name(),
+                createTime
         );
     }
 

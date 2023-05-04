@@ -1,4 +1,4 @@
-package tech.nobb.task.engine.repository.dataobj;
+package tech.nobb.task.engine.repository.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,13 +8,14 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import java.util.Date;
 
 @Entity
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "task")
-public class TaskPO {
+public class TaskEntity {
     @Id
     private String id;
     @Column(name = "parent", nullable = false)
@@ -33,5 +34,8 @@ public class TaskPO {
     private String allocatorId;
     @Column(name = "zeebe_job_key")
     private long zeebeJobKey;
-
+    @Column(name = "originator")
+    private String originatorId;
+    @Column(name = "create_time")
+    private Date createTime;
 }

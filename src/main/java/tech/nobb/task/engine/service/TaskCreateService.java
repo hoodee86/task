@@ -36,6 +36,7 @@ public class TaskCreateService extends BaseService{
                     checkRule,
                     allocator,
                     createSimpleTaskRequest.getZeebeJobKey(),
+                    createSimpleTaskRequest.getOriginator(),
                     taskRepository,
                     executionRepository,
                     configRepository,
@@ -54,7 +55,8 @@ public class TaskCreateService extends BaseService{
                                     createAndAssignTaskRequest.getThreshold(),
                                     createAndAssignTaskRequest.getAllocator(),
                                     createAndAssignTaskRequest.getZeebeJobKey(),
-                                    createAndAssignTaskRequest.getOrder()));
+                                    createAndAssignTaskRequest.getOrder(),
+                                    createAndAssignTaskRequest.getOriginator()));
         // 给执行者分配任务
         task.assign(createAndAssignTaskRequest.getExecutors());
     }

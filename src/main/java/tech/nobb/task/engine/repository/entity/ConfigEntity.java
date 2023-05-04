@@ -1,4 +1,4 @@
-package tech.nobb.task.engine.repository.dataobj;
+package tech.nobb.task.engine.repository.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -11,7 +11,7 @@ import javax.persistence.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "config")
-public class ConfigPO {
+public class ConfigEntity {
     @Id
     private String id;
     @Column(name = "type")

@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.*;
 import tech.nobb.task.engine.domain.checkrule.CompleteCheckRule;
 import tech.nobb.task.engine.repository.ConfigRepository;
-import tech.nobb.task.engine.repository.dataobj.ConfigPO;
+import tech.nobb.task.engine.repository.entity.ConfigEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tech.nobb.task.engine.domain.Execution;
@@ -74,19 +74,19 @@ public class PercentageCheckRule implements CompleteCheckRule {
 
     @Override
     public void save() {
-        configRepository.save(toPO());
+        configRepository.save(toEntity());
     }
 
     @Override
-    public ConfigPO toPO() {
-        return new ConfigPO(id, "COMPLETE_CHECK_RULE", name, toJSON());
+    public ConfigEntity toEntity() {
+        return new ConfigEntity(id, "COMPLETE_CHECK_RULE", name, toJSON());
     }
 
     @Override
     public void restore() {
-        ConfigPO configPO = configRepository.findById(id).orElseGet(null);
+        ConfigEntity configEntity = configRepository.findById(id).orElseGet(null);
         try {
-            PercentageCheckRule rule = mapper.readValue(configPO.getProperty(), PercentageCheckRule.class);
+            PercentageCheckRule rule = mapper.readValue(configEntity.getProperty(), PercentageCheckRule.class);
             this.name = rule.getName();
             this.percentThreshold = rule.getPercentThreshold();
         } catch (JsonProcessingException e) {

@@ -1,7 +1,7 @@
 package tech.nobb.task.engine.domain.allocator;
 
 import tech.nobb.task.engine.domain.Task;
-import tech.nobb.task.engine.repository.dataobj.ConfigPO;
+import tech.nobb.task.engine.repository.entity.ConfigEntity;
 
 public interface TaskAllocator {
 
@@ -9,6 +9,6 @@ public interface TaskAllocator {
     void allocate(Task task);
     String toJSON();
     void save();
-    ConfigPO toPO();
+    ConfigEntity toEntity();
     void restore();
 }

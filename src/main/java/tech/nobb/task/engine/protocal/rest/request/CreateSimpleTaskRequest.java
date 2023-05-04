@@ -21,4 +21,6 @@ public class CreateSimpleTaskRequest {
 
     private List<String> order;
 
+    private String originator;
+
 }

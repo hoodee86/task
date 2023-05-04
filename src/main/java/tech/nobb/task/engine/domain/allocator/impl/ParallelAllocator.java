@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.*;
 import tech.nobb.task.engine.domain.allocator.TaskAllocator;
 import tech.nobb.task.engine.repository.ConfigRepository;
-import tech.nobb.task.engine.repository.dataobj.ConfigPO;
+import tech.nobb.task.engine.repository.entity.ConfigEntity;
 import tech.nobb.task.engine.domain.Execution;
 import tech.nobb.task.engine.domain.Task;
 
@@ -48,19 +48,19 @@ public class ParallelAllocator implements TaskAllocator {
 
     @Override
     public void save() {
-        configRepository.save(toPO());
+        configRepository.save(toEntity());
     }
 
     @Override
-    public ConfigPO toPO() {
-        return new ConfigPO(id, "ALLOCATOR", name, toJSON());
+    public ConfigEntity toEntity() {
+        return new ConfigEntity(id, "ALLOCATOR", name, toJSON());
     }
 
     @Override
     public void restore() {
-        ConfigPO configPO = configRepository.findById(id).orElseGet(null);
+        ConfigEntity configEntity = configRepository.findById(id).orElseGet(null);
         try {
-            ParallelAllocator allocator = mapper.readValue(configPO.getProperty(), ParallelAllocator.class);
+            ParallelAllocator allocator = mapper.readValue(configEntity.getProperty(), ParallelAllocator.class);
             this.name = allocator.getName();
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);

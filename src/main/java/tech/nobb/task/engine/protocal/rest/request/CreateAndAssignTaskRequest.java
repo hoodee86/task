@@ -13,4 +13,5 @@ public class CreateAndAssignTaskRequest {
     private long zeebeJobKey;
     private List<String> order;
     private List<String> executors;
+    private String originator;
 }
