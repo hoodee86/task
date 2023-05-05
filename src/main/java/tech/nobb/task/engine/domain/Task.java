@@ -122,10 +122,6 @@ public class Task {
             status = Status.COMPLETED;
             // 将TASK进行扫尾
             onCompleted();
-            // 向zeebe broker发送该任务完成
-            if (zeebeJobKey !=  -1) {
-                zeebeClient.newCompleteCommand(zeebeJobKey).send().join();
-            }
         } else {
             allocator.allocate(this);
         }
@@ -143,6 +139,10 @@ public class Task {
                 }
             });
             save();
+            // 向zeebe broker发送该任务完成
+            if (zeebeJobKey !=  -1) {
+                zeebeClient.newCompleteCommand(zeebeJobKey).send().join();
+            }
         }
     }
 
