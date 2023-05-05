@@ -21,6 +21,7 @@ import java.util.*;
 
 @Data
 public class Task {
+    // TODO: 需要增加任务类型
     public enum Status {
         // 任务被创建
         CREATED,
