@@ -2,6 +2,8 @@ package tech.nobb.task.engine.domain.allocator;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tech.nobb.task.engine.domain.Execution;
 import tech.nobb.task.engine.domain.Task;
 import tech.nobb.task.engine.repository.AllocatorRepository;
@@ -13,6 +15,10 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 public class ParallelWithPercentageAllocator extends ParallelAllocator {
+
+    @Setter(AccessLevel.NONE)
+    @Getter(AccessLevel.NONE)
+    private Logger logger = LoggerFactory.getLogger(ParallelWithPercentageAllocator.class);
 
     private double percentThreshold;
 

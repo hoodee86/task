@@ -13,6 +13,7 @@ public class TaskExecuteService extends BaseService {
                 taskRepository,
                 executionRepository,
                 allocatorRepository,
+                actionConfigRepository,
                 zeebeClient);
         task.restore();
         task.claim(claimTaskRequest.getExecutor());
@@ -25,6 +26,7 @@ public class TaskExecuteService extends BaseService {
                 taskRepository,
                 executionRepository,
                 allocatorRepository,
+                actionConfigRepository,
                 zeebeClient);
         task.restore();
         task.complete(completeTaskRequest.getExecutor());
@@ -37,6 +39,7 @@ public class TaskExecuteService extends BaseService {
                 taskRepository,
                 executionRepository,
                 allocatorRepository,
+                actionConfigRepository,
                 zeebeClient);
         task.restore();
         task.suspend(suspendTaskRequest.getExecutor());
@@ -49,6 +52,7 @@ public class TaskExecuteService extends BaseService {
                 taskRepository,
                 executionRepository,
                 allocatorRepository,
+                actionConfigRepository,
                 zeebeClient);
         task.restore();
         task.unsuspend(unsuspendTaskRequest.getExecutor());
@@ -61,6 +65,7 @@ public class TaskExecuteService extends BaseService {
                 taskRepository,
                 executionRepository,
                 allocatorRepository,
+                actionConfigRepository,
                 zeebeClient);
         task.restore();
         task.forward(forwardTaskRequest.getExecutor(), forwardTaskRequest.getOther());
