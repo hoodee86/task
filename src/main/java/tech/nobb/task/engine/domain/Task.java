@@ -1,7 +1,10 @@
 package tech.nobb.task.engine.domain;
 
 import io.camunda.zeebe.client.ZeebeClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tech.nobb.task.engine.domain.allocator.*;
+import tech.nobb.task.engine.repository.ActionConfigRepository;
 import tech.nobb.task.engine.repository.AllocatorRepository;
 import tech.nobb.task.engine.repository.ExecutionRepository;
 import tech.nobb.task.engine.repository.TaskRepository;
@@ -17,6 +20,8 @@ import java.util.*;
 
 @Data
 public class Task {
+
+    protected Logger logger = LoggerFactory.getLogger(Task.class);
     // TODO: 需要增加任务类型
     public enum Status {
         // 任务被创建
@@ -35,7 +40,6 @@ public class Task {
     private final String id;
     private String name;
     private Priority priority;
-    // 增加创建”信息“和创建时间
     private String originator;
     private Date createTime;
     private Map<String, Execution> executions;
@@ -44,6 +48,7 @@ public class Task {
     private String root;
     private String parent;
     private Allocator allocator;
+    private ActionConfig actionConfig;
     private long zeebeJobKey;
     @Setter(AccessLevel.NONE)
     @Getter(AccessLevel.NONE)
@@ -56,6 +61,9 @@ public class Task {
     private final AllocatorRepository allocatorRepository;
     @Setter(AccessLevel.NONE)
     @Getter(AccessLevel.NONE)
+    private final ActionConfigRepository actionConfigRepository;
+    @Setter(AccessLevel.NONE)
+    @Getter(AccessLevel.NONE)
     private ZeebeClient zeebeClient;
 
     // 构建一个全新的任务对象, 不是流程触发的，是人工触发的。
@@ -65,9 +73,11 @@ public class Task {
                 Allocator allocator,
                 long zeebeJobKey,
                 String originator,
+                ActionConfig actionConfig,
                 TaskRepository taskRepository,
                 ExecutionRepository executionRepository,
                 AllocatorRepository allocatorRepository,
+                ActionConfigRepository actionConfigRepository,
                 ZeebeClient zeebeClient) {
         this.id = UUID.randomUUID().toString();
         this.name = name;
@@ -83,9 +93,11 @@ public class Task {
         this.taskRepository = taskRepository;
         this.executionRepository = executionRepository;
         this.allocatorRepository = allocatorRepository;
+        this.actionConfigRepository = actionConfigRepository;
         this.zeebeClient = zeebeClient;
         this.originator = originator;
         this.createTime = new Date();
+        this.actionConfig = actionConfig;
     }
 
     // 根据ID构建一个空任务对象
@@ -93,11 +105,13 @@ public class Task {
                 TaskRepository taskRepository,
                 ExecutionRepository executionRepository,
                 AllocatorRepository allocatorRepository,
+                ActionConfigRepository actionConfigRepository,
                 ZeebeClient zeebeClient) {
         this.id = id;
         this.taskRepository = taskRepository;
         this.executionRepository = executionRepository;
         this.allocatorRepository = allocatorRepository;
+        this.actionConfigRepository = actionConfigRepository;
         this.subtask = new HashMap<>();
         this.executions = new HashMap<String, Execution>();
         this.zeebeClient = zeebeClient;
@@ -142,6 +156,10 @@ public class Task {
 
     // 一个执行者认领一个任务
     public void claim(String executor) {
+        if (!actionConfig.isClaim()) {
+            logger.info("the claim property is false, cannot be claimed");
+            return;
+        }
         Execution execution = new Execution(this, executor, Execution.Status.CREATED, executionRepository);
         executions.put(executor, execution);
         execution.start();
@@ -153,6 +171,10 @@ public class Task {
     }
     // 给一个执行者分配一个任务
     public Execution assign(String executor) {
+        if (!actionConfig.isAssign()) {
+            logger.info("the assign property is false, cannot be claimed");
+            return null;
+        }
         Execution execution = new Execution(this, executor, Execution.Status.CREATED, executionRepository);
         executions.put(executor, execution);
         allocator.allocate(this);
@@ -164,6 +186,10 @@ public class Task {
     }
 
     public List<Execution> assign(List<String> executors) {
+        if (!actionConfig.isAssign()) {
+            logger.info("the assign property is false, cannot be assigned");
+            return null;
+        }
         List<Execution> results = new ArrayList<>();
         executors.forEach(e -> {
             Execution execution = new Execution(this, e, Execution.Status.CREATED, executionRepository);
@@ -181,6 +207,10 @@ public class Task {
 
     // 搁置一个任务
     public void suspend(String executor) {
+        if (!actionConfig.isSuspend()) {
+            logger.info("the suspend property is false, cannot be suspended");
+            return;
+        }
         Execution execution = executions.get(executor);
         execution.suspend();
         execution.save();
@@ -195,6 +225,10 @@ public class Task {
 
     // 转让一个任务
     public void forward(String executor, String otherExecutor) {
+        if (!actionConfig.isForward()) {
+            logger.info("the forward property is false, cannot be forwarded");
+            return;
+        }
         // 自己不可以转发给自己
         if (executor.equals(otherExecutor)) {
             return;
@@ -209,6 +243,7 @@ public class Task {
     // 持久化当前任务对象
     public void save() {
         allocator.save();
+        actionConfig.save();
         taskRepository.save(toEntity());
     }
 
@@ -235,21 +270,24 @@ public class Task {
             } else {
                 parent = taskEntity.getParent();
             }
-            // 还原配置信息
+            // 还原allocator对象
             AllocatorEntity allocatorEntity = allocatorRepository.findById(taskEntity.getAllocatorId()).orElseGet(null);
             if (Objects.isNull(allocatorEntity)) {
                 return null;
             }
-            if (allocatorEntity.getName().equals("PARALLEL")) {
-                allocator = new ParallelAllocator(taskEntity.getAllocatorId(), allocatorRepository);
-                allocator.restore();
-            } else if (allocatorEntity.getName().equals("SERIAL")) {
+            if (allocatorEntity.getName().equals("SERIAL")) {
                 allocator = new SerialAllocator(taskEntity.getAllocatorId(), allocatorRepository);
                 allocator.restore();
             } else if (allocatorEntity.getName().equals("PARALLEL-PERCENTAGE")) {
                 allocator = new ParallelWithPercentageAllocator(taskEntity.getAllocatorId(), allocatorRepository);
                 allocator.restore();
+            } else {
+                allocator = new ParallelAllocator(taskEntity.getAllocatorId(), allocatorRepository);
+                allocator.restore();
             }
+            // 还原actionConfig对象
+            actionConfig = new ActionConfig(taskEntity.getActionConfigId(), actionConfigRepository);
+            actionConfig.restore();
 
             // 还原executions
             List<ExecutionEntity> executionEntities = executionRepository.findByTaskId(id);
@@ -279,6 +317,7 @@ public class Task {
                                         taskRepository,
                                         executionRepository,
                                         allocatorRepository,
+                                        actionConfigRepository,
                                         zeebeClient).
                                         restore());
                     }
@@ -303,6 +342,7 @@ public class Task {
                     name, priority.name(),
                     status.name(),
                     allocator.getId(),
+                    actionConfig.getId(),
                     zeebeJobKey,
                     originator,
                     createTime);
@@ -313,6 +353,7 @@ public class Task {
                     name, priority.name(),
                     status.name(),
                     allocator.getId(),
+                    actionConfig.getId(),
                     zeebeJobKey,
                     originator,
                     createTime);

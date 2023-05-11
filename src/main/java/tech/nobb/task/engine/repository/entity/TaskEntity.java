@@ -30,6 +30,8 @@ public class TaskEntity {
     private String status;
     @Column(name = "allocator_id")
     private String allocatorId;
+    @Column(name = "action_config_id")
+    private String actionConfigId;
     @Column(name = "zeebe_job_key")
     private long zeebeJobKey;
     @Column(name = "originator")

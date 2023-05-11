@@ -23,7 +23,7 @@ public class ParallelAllocator extends Allocator implements Allocatable, Complet
 
     @Setter(AccessLevel.NONE)
     @Getter(AccessLevel.NONE)
-    protected Logger logger = LoggerFactory.getLogger(ParallelAllocator.class);
+    private Logger logger = LoggerFactory.getLogger(ParallelAllocator.class);
 
     public ParallelAllocator(AllocatorRepository allocatorRepository) {
         this.id = UUID.randomUUID().toString();

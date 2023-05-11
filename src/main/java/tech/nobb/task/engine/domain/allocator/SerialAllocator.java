@@ -18,7 +18,7 @@ public class SerialAllocator extends Allocator implements Allocatable, CompleteC
 
     @Setter(AccessLevel.NONE)
     @Getter(AccessLevel.NONE)
-    protected Logger logger = LoggerFactory.getLogger(SerialAllocator.class);
+    private Logger logger = LoggerFactory.getLogger(SerialAllocator.class);
 
     private List<String> order;
 
