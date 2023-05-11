@@ -28,8 +28,6 @@ public class TaskEntity {
     private String priority;
     @Column(name = "status")
     private String status;
-    @Column(name = "check_rule_id")
-    private String checkRuleId;
     @Column(name = "allocator_id")
     private String allocatorId;
     @Column(name = "zeebe_job_key")

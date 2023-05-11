@@ -1,65 +1,62 @@
 package tech.nobb.task.engine.service;
 
-import tech.nobb.task.engine.domain.checkrule.CompleteCheckRule;
-import tech.nobb.task.engine.domain.checkrule.impl.PercentageCheckRule;
-import tech.nobb.task.engine.domain.allocator.TaskAllocator;
-import tech.nobb.task.engine.domain.allocator.impl.ParallelAllocator;
-import tech.nobb.task.engine.domain.allocator.impl.SerialAllocator;
-import tech.nobb.task.engine.protocal.rest.request.CreateSimpleTaskRequest;
-import tech.nobb.task.engine.protocal.rest.request.CreateAndAssignTaskRequest;
+import tech.nobb.task.engine.domain.allocator.Allocator;
+import tech.nobb.task.engine.domain.allocator.ParallelAllocator;
+import tech.nobb.task.engine.domain.allocator.ParallelWithPercentageAllocator;
+import tech.nobb.task.engine.domain.allocator.SerialAllocator;
+import tech.nobb.task.engine.protocal.rest.request.CreateTaskRequest;
 import org.springframework.stereotype.Service;
 import tech.nobb.task.engine.domain.Task;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Objects;
+
 
 @Service
 public class TaskCreateService extends BaseService{
     // 创建一个简单的任务，仅创建任务，不分配任务
-    public Task newSimpleTask(CreateSimpleTaskRequest createSimpleTaskRequest) {
-
-        CompleteCheckRule checkRule = null;
-        TaskAllocator allocator = null;
-        if ("percentage".equals(createSimpleTaskRequest.getCheckRule())) {
-            checkRule = new PercentageCheckRule(Double.parseDouble(createSimpleTaskRequest.getThreshold()), configRepository);
+    public Task createTask(CreateTaskRequest createTaskRequest) {
+        Allocator allocator = null;
+        if ("PARALLEL-PERCENTAGE".equals(createTaskRequest.getAllocator())) {
+            allocator = new ParallelWithPercentageAllocator(
+                    (double)(createTaskRequest.getAllocatorConfig().get("threshold")),
+                    allocatorRepository);
         }
-        if ("parallel".equals(createSimpleTaskRequest.getAllocator())) {
-            allocator = new ParallelAllocator(configRepository);
+        else if ("SERIAL".equals(createTaskRequest.getAllocator())) {
+            allocator = new SerialAllocator(
+                    (ArrayList<String>)createTaskRequest.getAllocatorConfig().get("order"),
+                    allocatorRepository);
+            // 将当前的executor改成order，也就是说，Serial的executor可以不设置
+            createTaskRequest.setExecutors((ArrayList<String>)createTaskRequest.getAllocatorConfig().get("order"));
+        } else { // 默认创建一个PARALLEL的任务
+            allocator = new ParallelAllocator(allocatorRepository);
         }
-        if ("serial".equals(createSimpleTaskRequest.getAllocator())) {
-            allocator = new SerialAllocator(createSimpleTaskRequest.getOrder(), configRepository);
-        }
-        if (Objects.nonNull(checkRule) && Objects.nonNull(allocator)) {
+        if (Objects.nonNull(allocator)) {
             Task task = new Task(
-                    createSimpleTaskRequest.getName(),
+                    createTaskRequest.getName(),
                     Task.Priority.NORMAL,
                     null,
-                    checkRule,
                     allocator,
-                    createSimpleTaskRequest.getZeebeJobKey(),
-                    createSimpleTaskRequest.getOriginator(),
+                    createTaskRequest.getZeebeJobKey(),
+                    createTaskRequest.getOriginator(),
                     taskRepository,
                     executionRepository,
-                    configRepository,
+                    allocatorRepository,
                     zeebeClient);
+
+            // 如果executors没指定或者executors为空，则将执行人指定为自己
+            // 也就是说，创建一个任务，至少有一个execution
+            if (Objects.isNull(createTaskRequest.getExecutors()) ||
+                    createTaskRequest.getExecutors().size() == 0) {
+                task.assign(Arrays.asList(createTaskRequest.getOriginator()));
+            } else {
+                task.assign(createTaskRequest.getExecutors());
+            }
             task.save();
             return task;
         }
         return null;
     }
-
-    // 创建一个任务并分配执行人
-    public void newTaskAndAssign(CreateAndAssignTaskRequest createAndAssignTaskRequest) {
-        Task task = newSimpleTask(new CreateSimpleTaskRequest(
-                                    createAndAssignTaskRequest.getName(),
-                                    createAndAssignTaskRequest.getCheckRule(),
-                                    createAndAssignTaskRequest.getThreshold(),
-                                    createAndAssignTaskRequest.getAllocator(),
-                                    createAndAssignTaskRequest.getZeebeJobKey(),
-                                    createAndAssignTaskRequest.getOrder(),
-                                    createAndAssignTaskRequest.getOriginator()));
-        // 给执行者分配任务
-        task.assign(createAndAssignTaskRequest.getExecutors());
-    }
-
 
 }

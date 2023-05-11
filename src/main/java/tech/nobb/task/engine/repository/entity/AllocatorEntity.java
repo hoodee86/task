@@ -10,14 +10,12 @@ import javax.persistence.*;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "config")
-public class ConfigEntity {
+@Table(name = "allocator")
+public class AllocatorEntity {
     @Id
     private String id;
-    @Column(name = "type")
-    private String type;
     @Column(name = "name")
     private String name;
-    @Column(name = "property")
-    private String property;
+    @Column(name = "config")
+    private String config;
 }

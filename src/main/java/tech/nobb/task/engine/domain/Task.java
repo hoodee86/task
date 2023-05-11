@@ -1,15 +1,11 @@
 package tech.nobb.task.engine.domain;
 
 import io.camunda.zeebe.client.ZeebeClient;
-import tech.nobb.task.engine.domain.allocator.impl.ParallelAllocator;
-import tech.nobb.task.engine.domain.allocator.impl.SerialAllocator;
-import tech.nobb.task.engine.domain.checkrule.CompleteCheckRule;
-import tech.nobb.task.engine.domain.allocator.TaskAllocator;
-import tech.nobb.task.engine.domain.checkrule.impl.PercentageCheckRule;
-import tech.nobb.task.engine.repository.ConfigRepository;
+import tech.nobb.task.engine.domain.allocator.*;
+import tech.nobb.task.engine.repository.AllocatorRepository;
 import tech.nobb.task.engine.repository.ExecutionRepository;
 import tech.nobb.task.engine.repository.TaskRepository;
-import tech.nobb.task.engine.repository.entity.ConfigEntity;
+import tech.nobb.task.engine.repository.entity.AllocatorEntity;
 import tech.nobb.task.engine.repository.entity.ExecutionEntity;
 import tech.nobb.task.engine.repository.entity.TaskEntity;
 import lombok.AccessLevel;
@@ -47,8 +43,7 @@ public class Task {
     private Map<String, Task> subtask;
     private String root;
     private String parent;
-    private CompleteCheckRule completeCheckRule;
-    private TaskAllocator allocator;
+    private Allocator allocator;
     private long zeebeJobKey;
     @Setter(AccessLevel.NONE)
     @Getter(AccessLevel.NONE)
@@ -58,7 +53,7 @@ public class Task {
     private final ExecutionRepository executionRepository;
     @Setter(AccessLevel.NONE)
     @Getter(AccessLevel.NONE)
-    private final ConfigRepository configRepository;
+    private final AllocatorRepository allocatorRepository;
     @Setter(AccessLevel.NONE)
     @Getter(AccessLevel.NONE)
     private ZeebeClient zeebeClient;
@@ -67,19 +62,17 @@ public class Task {
     public Task(String name,
                 Priority priority,
                 String parent,
-                CompleteCheckRule completeCheckRule,
-                TaskAllocator allocator,
+                Allocator allocator,
                 long zeebeJobKey,
                 String originator,
                 TaskRepository taskRepository,
                 ExecutionRepository executionRepository,
-                ConfigRepository configRepository,
+                AllocatorRepository allocatorRepository,
                 ZeebeClient zeebeClient) {
         this.id = UUID.randomUUID().toString();
         this.name = name;
         this.priority = priority;
         this.subtask = new HashMap<String, Task>();
-        this.completeCheckRule = completeCheckRule;
         this.allocator = allocator;
         this.zeebeJobKey = zeebeJobKey;
         this.executions = new HashMap<String, Execution>();
@@ -89,7 +82,7 @@ public class Task {
         this.status = Status.CREATED;
         this.taskRepository = taskRepository;
         this.executionRepository = executionRepository;
-        this.configRepository = configRepository;
+        this.allocatorRepository = allocatorRepository;
         this.zeebeClient = zeebeClient;
         this.originator = originator;
         this.createTime = new Date();
@@ -99,12 +92,12 @@ public class Task {
     public Task(String id,
                 TaskRepository taskRepository,
                 ExecutionRepository executionRepository,
-                ConfigRepository configRepository,
+                AllocatorRepository allocatorRepository,
                 ZeebeClient zeebeClient) {
         this.id = id;
         this.taskRepository = taskRepository;
         this.executionRepository = executionRepository;
-        this.configRepository = configRepository;
+        this.allocatorRepository = allocatorRepository;
         this.subtask = new HashMap<>();
         this.executions = new HashMap<String, Execution>();
         this.zeebeClient = zeebeClient;
@@ -118,7 +111,7 @@ public class Task {
     }
 
     public void checkCompletion() {
-        if (completeCheckRule.complete(this)) {
+        if (allocator.isComplete(this)) {
             // 将当前任务的状态设置成COMPLETED
             status = Status.COMPLETED;
             // 将TASK进行扫尾
@@ -215,7 +208,6 @@ public class Task {
 
     // 持久化当前任务对象
     public void save() {
-        completeCheckRule.save();
         allocator.save();
         taskRepository.save(toEntity());
     }
@@ -244,25 +236,19 @@ public class Task {
                 parent = taskEntity.getParent();
             }
             // 还原配置信息
-            ConfigEntity allocatorPO = configRepository.findById(taskEntity.getAllocatorId()).orElseGet(null);
-            ConfigEntity completeCheckRulePO = configRepository.findById(taskEntity.getCheckRuleId()).orElseGet(null);
-            if (Objects.isNull(allocatorPO) || Objects.isNull(completeCheckRulePO)) {
+            AllocatorEntity allocatorEntity = allocatorRepository.findById(taskEntity.getAllocatorId()).orElseGet(null);
+            if (Objects.isNull(allocatorEntity)) {
                 return null;
             }
-            if (allocatorPO.getType().equals("ALLOCATOR")) {
-                if (allocatorPO.getName().equals("PARALLEL")) {
-                    allocator = new ParallelAllocator(taskEntity.getAllocatorId(), configRepository);
-                    allocator.restore();
-                } else if (allocatorPO.getName().equals("SERIAL")) {
-                    allocator = new SerialAllocator(taskEntity.getAllocatorId(), configRepository);
-                    allocator.restore();
-                }
-            }
-            if (completeCheckRulePO.getType().equals("COMPLETE_CHECK_RULE")) {
-                if (completeCheckRulePO.getName().equals("PERCENT_CHECK_RULE")) {
-                    completeCheckRule = new PercentageCheckRule(taskEntity.getCheckRuleId(), configRepository);
-                    completeCheckRule.restore();
-                }
+            if (allocatorEntity.getName().equals("PARALLEL")) {
+                allocator = new ParallelAllocator(taskEntity.getAllocatorId(), allocatorRepository);
+                allocator.restore();
+            } else if (allocatorEntity.getName().equals("SERIAL")) {
+                allocator = new SerialAllocator(taskEntity.getAllocatorId(), allocatorRepository);
+                allocator.restore();
+            } else if (allocatorEntity.getName().equals("PARALLEL-PERCENTAGE")) {
+                allocator = new ParallelWithPercentageAllocator(taskEntity.getAllocatorId(), allocatorRepository);
+                allocator.restore();
             }
 
             // 还原executions
@@ -292,7 +278,7 @@ public class Task {
                                 new Task(subtaskEntity.getId(),
                                         taskRepository,
                                         executionRepository,
-                                        configRepository,
+                                        allocatorRepository,
                                         zeebeClient).
                                         restore());
                     }
@@ -316,7 +302,6 @@ public class Task {
                     this.id,
                     name, priority.name(),
                     status.name(),
-                    completeCheckRule.getId(),
                     allocator.getId(),
                     zeebeJobKey,
                     originator,
@@ -327,7 +312,6 @@ public class Task {
                     this.id,
                     name, priority.name(),
                     status.name(),
-                    completeCheckRule.getId(),
                     allocator.getId(),
                     zeebeJobKey,
                     originator,

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.web.bind.annotation.*;
 import tech.nobb.task.engine.protocal.rest.request.*;
+import tech.nobb.task.engine.service.TaskAssignService;
 import tech.nobb.task.engine.service.TaskCreateService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,29 +22,31 @@ public class TaskController {
     @Autowired
     TaskExecuteService taskExecuteService;
     @Autowired
+    TaskAssignService taskAssignService;
+    @Autowired
     private ObjectMapper mapper;
 
-    // 创建任务，但不分配人
-    @RequestMapping(value = "/simple-task", method = RequestMethod.POST)
-    public void newSimpleTask(@RequestBody CreateSimpleTaskRequest createSimpleTaskRequest) {
+    // 创建任务并分配人，如果执行人没指定，则默认为创建人
+    @RequestMapping(value = "/task", method = RequestMethod.POST)
+    public void newSimpleTask(@RequestBody CreateTaskRequest createTaskRequest) {
         // TODO: 对参数进行校验
         try {
-            logger.info(mapper.writeValueAsString(createSimpleTaskRequest));
+            logger.info(mapper.writeValueAsString(createTaskRequest));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
-        taskCreateService.newSimpleTask(createSimpleTaskRequest);
+        taskCreateService.createTask(createTaskRequest);
     }
-    // 创建任务，并且分配相关执行人
-    @RequestMapping(value = "/task-assign", method = RequestMethod.POST)
-    public void newTaskAndAssign(@RequestBody CreateAndAssignTaskRequest createAndAssignTaskRequest) {
+    // 给若干人分配任务
+    @RequestMapping(value = "/assign", method = RequestMethod.POST)
+    public void newTaskAndAssign(@RequestBody AssignTaskRequest assignTaskRequest) {
         //TODO: 对参数进行校验
         try {
-            logger.info(mapper.writeValueAsString(createAndAssignTaskRequest));
+            logger.info(mapper.writeValueAsString(assignTaskRequest));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
-        taskCreateService.newTaskAndAssign(createAndAssignTaskRequest);
+        taskAssignService.assignTask(assignTaskRequest.getTaskId(), assignTaskRequest.getExecutors());
     }
 
     //某一个人认领一个任务
